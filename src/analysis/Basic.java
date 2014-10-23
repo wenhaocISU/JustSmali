@@ -16,8 +16,10 @@ public class Basic {
 	private static StaticApp staticApp;
 	
 	public static StaticApp initAnalysis(String apkPath, boolean forceAllSteps) {
+		
 		staticApp = new StaticApp();
-		staticApp.setApkFile(new File(apkPath));
+		File apkFile = new File(apkPath);
+		staticApp.setApkFile(apkFile);
 		staticApp.outPath = Paths.appDataDir + staticApp.getApkFile().getName();
 		
 		

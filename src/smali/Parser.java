@@ -3,9 +3,12 @@ package smali;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 
 import staticFamily.StaticApp;
 import staticFamily.StaticClass;
+import staticFamily.StaticField;
 import staticFamily.StaticMethod;
 
 public class Parser {
@@ -16,10 +19,18 @@ public class Parser {
 	private static String classSmali;
 	
 	public static void parseSmali(StaticApp theApp) {
+		
 		staticApp = theApp;
 		smaliFolder = new File(staticApp.outPath + "/apktool/smali/");
+		System.out.println("parsing smali files...");
 		for (File f : smaliFolder.listFiles())
 			parseFile(f);
+		File original = new File(staticApp.outPath + "/apktool/smali/");
+		File instrumented = new File(staticApp.outPath + "/apktool/newSmali/");
+		System.out.println("\nmoving original smali files into /apktool/oldSmali/...");
+		original.renameTo(new File(staticApp.outPath + "/apktool/oldSmali/"));
+		System.out.println("\nmoving instrumented smali files into /apktool/smali/...");
+		instrumented.renameTo(new File(staticApp.outPath + "/apktool/smali/"));
 	}
 	
 	private static void parseFile(File f) {
@@ -37,7 +48,6 @@ public class Parser {
 			c.setJavaName(className);
 			parseSmaliCode(f, c);
 			staticApp.addClass(c);
-			//System.out.println(" max line number for class " + c.getJavaName() + "\tis " + getLargestLineNumber(f));
 		}
 	}
 	
@@ -49,7 +59,7 @@ public class Parser {
 			String line;
 			// first line
 			if ((line = in.readLine())!=null) {
-				classSmali = line;
+				classSmali = line + "\n";
 				if (line.contains(" public "))		c.setPublic(true);
 				if (line.contains(" interface "))	c.setInterface(true);
 				if (line.contains(" final "))		c.setFinal(true);
@@ -80,6 +90,11 @@ public class Parser {
 				}
 			}
 			in.close();
+			File newF = new File(staticApp.outPath + "/apktool/newSmali/" + c.getJavaName().replace(".", "/") + ".smali");
+			newF.getParentFile().mkdirs();
+			PrintWriter out = new PrintWriter(new FileWriter(newF));
+			out.write(classSmali);
+			out.close();
 		}	catch (Exception e) {e.printStackTrace();}
 		
 	}
@@ -113,6 +128,10 @@ public class Parser {
 			else if (line.equals(".annotation system Ldalvik/annotation/InnerClass;")) {
 				c.setInnerClass(true);
 			}
+		}
+		else if (line.startsWith(".field ")) {
+			StaticField f = new StaticField();
+			
 		}
 	}
 	
