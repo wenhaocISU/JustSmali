@@ -69,7 +69,14 @@ public class Parser {
 				// check if it's private or protected.
 				if (line.startsWith(".method ")) {
 					StaticMethod m = new StaticMethod();
+					m.setDeclaringClass(c.getJavaName());
 					
+					while (!line.equals(".end method")) {
+						line = in.readLine();
+						classSmali += line + "\n";
+						
+					}
+					c.addMethod(m);
 				}
 			}
 			in.close();
