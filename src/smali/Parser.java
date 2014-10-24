@@ -43,15 +43,17 @@ public class Parser {
 					className.indexOf(smaliFolder.getAbsolutePath()) + smaliFolder.getAbsolutePath().length()+1,
 					className.lastIndexOf(".smali"));
 			className = className.replace(File.separator, ".");
-			final StaticClass c = new StaticClass();
+			StaticClass c = staticApp.findClassByJavaName(className);
+			if (c == null)
+				c = new StaticClass();
 			c.setInDEX(true);
 			c.setJavaName(className);
-			parseSmaliCode(f, c);
+			c = parseSmaliCode(f, c);
 			staticApp.addClass(c);
 		}
 	}
 	
-	private static void parseSmaliCode(File f, final StaticClass c) {
+	private static StaticClass parseSmaliCode(File f, final StaticClass c) {
 		int largestLineNumber = getLargestLineNumber(f);
 		classSmali = "";
 		try {
@@ -96,7 +98,7 @@ public class Parser {
 			out.write(classSmali);
 			out.close();
 		}	catch (Exception e) {e.printStackTrace();}
-		
+		return c;
 	}
 	
 	private static void parsePreMethodSection(StaticClass c, String line) throws Exception{
@@ -125,13 +127,63 @@ public class Parser {
 					}
 				}
 			}
+			else if (line.equals(".annotation system Ldalvik/annotation/EnclosingMethod;")) {
+				while (!line.equals(".end annotation")) {
+					line = in.readLine();
+					classSmali += line + "\n";
+					if (line.startsWith("    value = ")) {
+						String mSig = line.substring(line.lastIndexOf(" = ")+3);
+						String dexC = mSig.split("->")[0];
+						StaticClass outerC = staticApp.findClassByDexName(dexC);
+						if (outerC == null) {
+							outerC = new StaticClass();
+							outerC.setJavaName(Grammar.dexToJavaClassName(dexC));
+						}
+						outerC.addInnerClass(c.getJavaName());
+						c.setOuterClass(outerC.getJavaName());
+					}
+				}
+			}
+			else if (line.equals(".annotation system Ldalvik/annotation/EnclosingClass;")) {
+				while (!line.equals(".end annotation")) {
+					line = in.readLine();
+					classSmali += line + "\n";
+					if (line.startsWith("    value = ")) {
+						String dexC = line.substring(line.lastIndexOf(" = ")+3);
+						StaticClass outerC = staticApp.findClassByDexName(dexC);
+						if (outerC == null) {
+							outerC = new StaticClass();
+							outerC.setJavaName(Grammar.dexToJavaClassName(dexC));
+						}
+						outerC.addInnerClass(c.getJavaName());
+						c.setOuterClass(outerC.getJavaName());
+					}
+				}
+			}
 			else if (line.equals(".annotation system Ldalvik/annotation/InnerClass;")) {
 				c.setInnerClass(true);
 			}
 		}
 		else if (line.startsWith(".field ")) {
 			StaticField f = new StaticField();
-			
+			if (line.contains(" public "))		f.setPublic(true);
+			if (line.contains(" private "))		f.setPrivate(true);
+			if (line.contains(" protected "))	f.setProtected(true);
+			if (line.contains(" final "))		f.setFinal(true);
+			if (line.contains(" static "))		f.setStatic(true);
+										else	f.setInstance(true);
+			String nameType = line.substring(line.lastIndexOf(" ")+1);
+			if (f.isFinal() && line.contains(" = ")) {
+				System.out.println("-C- " + c.getJavaName() + ": " + line);
+				nameType = line.split(" = ")[0];
+				nameType = nameType.substring(nameType.lastIndexOf(" ")+1);
+				String finalValue = line.split(" = ")[1];
+				f.setFinalValue(finalValue);
+			}
+			String name = nameType.split(":")[0];
+			String dexType = nameType.split(":")[1];
+			f.setName(name);
+			f.setType(Grammar.dexToJavaClassName(dexType));
 		}
 	}
 	

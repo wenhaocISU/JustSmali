@@ -108,7 +108,8 @@ public class StaticMethod  implements Serializable{
 	}
 
 	public void addSourceLineNumber(int srcLineNumber) {
-		this.sourceLineNumbers.add(srcLineNumber);
+		if (!this.sourceLineNumbers.contains(srcLineNumber))
+			this.sourceLineNumbers.add(srcLineNumber);
 	}
 
 	public ArrayList<String> getInCallSourceSigs() {
@@ -116,7 +117,8 @@ public class StaticMethod  implements Serializable{
 	}
 
 	public void addInCallSourceSig(String srcSig) {
-		this.inCallSourceSigs.add(srcSig);
+		if (!this.inCallSourceSigs.contains(srcSig))
+			this.inCallSourceSigs.add(srcSig);
 	}
 
 	public ArrayList<String> getOutCallTargetSigs() {
@@ -124,7 +126,8 @@ public class StaticMethod  implements Serializable{
 	}
 
 	public void addOutCallTargetSigs(String tgtSig) {
-		this.outCallTargetSigs.add(tgtSig);
+		if (!this.outCallTargetSigs.contains(tgtSig))
+			this.outCallTargetSigs.add(tgtSig);
 	}
 
 	public ArrayList<String> getFieldRefSigs() {
@@ -132,7 +135,8 @@ public class StaticMethod  implements Serializable{
 	}
 
 	public void addFieldRefSigs(String fieldRefSig) {
-		this.fieldRefSigs.add(fieldRefSig);
+		if (!this.fieldRefSigs.contains(fieldRefSig))
+			this.fieldRefSigs.add(fieldRefSig);
 	}
 	
 	

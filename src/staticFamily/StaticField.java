@@ -10,10 +10,11 @@ public class StaticField  implements Serializable{
 	
 	private String name;
 	private String type;
+	private String finalValue = "";
 	
 	private String declaringClassName;
 	
-	private boolean isPublic, isPrivate, isProtected;
+	private boolean isPublic, isPrivate, isProtected, isFinal;
 	private boolean isInherited;
 	
 	private ArrayList<String> inCallSourceSigs = new ArrayList<String>();
@@ -98,7 +99,24 @@ public class StaticField  implements Serializable{
 	}
 
 	public void addInCallSourceSig(String srcSig) {
-		this.inCallSourceSigs.add(srcSig);
+		if (!this.inCallSourceSigs.contains(srcSig))
+			this.inCallSourceSigs.add(srcSig);
+	}
+
+	public boolean isFinal() {
+		return isFinal;
+	}
+
+	public void setFinal(boolean isFinal) {
+		this.isFinal = isFinal;
+	}
+
+	public String getFinalValue() {
+		return finalValue;
+	}
+
+	public void setFinalValue(String finalValue) {
+		this.finalValue = finalValue;
 	}
 	
 }

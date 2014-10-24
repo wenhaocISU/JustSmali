@@ -52,7 +52,8 @@ public class StaticClass  implements Serializable{
 		return interfaces;
 	}
 	public void addInterface(String interfaceName) {
-		this.interfaces.add(interfaceName);
+		if (!this.interfaces.contains(interfaceName))
+			this.interfaces.add(interfaceName);
 	} 
 	public String getOuterClass() {
 		return outerClass;
@@ -70,7 +71,8 @@ public class StaticClass  implements Serializable{
 		return innerClasses;
 	}
 	public void addInnerClass(String innerClass) {
-		this.innerClasses.add(innerClass);
+		if (!this.innerClasses.contains(innerClass))
+			this.innerClasses.add(innerClass);
 	}
 	public boolean isPublic() {
 		return isPublic;

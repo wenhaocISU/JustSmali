@@ -40,5 +40,17 @@ public class StaticApp implements Serializable{
 	}
 	
 	// Utilities
+	public StaticClass findClassByJavaName(String cN) {
+		for (StaticClass c : classes)
+			if (c.getJavaName().equals(cN))
+				return c;
+		return null;
+	}
 	
+	public StaticClass findClassByDexName(String cN) {
+		for (StaticClass c : classes)
+			if (c.getDexName().equals(cN))
+				return c;
+		return null;
+	}
 }
