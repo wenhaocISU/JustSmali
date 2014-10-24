@@ -120,6 +120,11 @@ public class StaticClass  implements Serializable{
 	public void setInDEX(boolean isInDEX) {
 		this.isInDEX = isInDEX;
 	}
+	public boolean hasInnerClass() {
+		if (innerClasses.size() > 0)
+			return true;
+		return false;
+	}
 	public boolean isInnerClass() {
 		return isInnerClass;
 	}
