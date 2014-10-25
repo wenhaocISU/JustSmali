@@ -53,4 +53,11 @@ public class StaticApp implements Serializable{
 				return c;
 		return null;
 	}
+	
+	public StaticMethod findMethod(String sig) {
+		if (!sig.contains("->"))
+			return null;
+		String cN = sig.split("->")[0];
+		return findClassByDexName(cN).getMethod(sig);
+	}
 }

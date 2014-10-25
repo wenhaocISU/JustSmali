@@ -6,11 +6,11 @@ import java.util.ArrayList;
 @SuppressWarnings("serial")
 public class StaticField  implements Serializable{
 
-	private boolean isInstance, isStatic;
+	private boolean isStatic;
 	
-	private String name;
+	private String dexSubSig;
 	private String type;
-	private String finalValue = "";
+	private String initValue = "";
 	
 	private String declaringClassName;
 	
@@ -23,12 +23,9 @@ public class StaticField  implements Serializable{
 	// Getters and Setters
 	
 	public boolean isInstance() {
-		return isInstance;
+		return !isStatic;
 	}
 
-	public void setInstance(boolean isInstance) {
-		this.isInstance = isInstance;
-	}
 
 	public boolean isStatic() {
 		return isStatic;
@@ -39,11 +36,7 @@ public class StaticField  implements Serializable{
 	}
 
 	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
+		return this.getDexSubSig().split(":")[0];
 	}
 
 	public String getType() {
@@ -111,12 +104,22 @@ public class StaticField  implements Serializable{
 		this.isFinal = isFinal;
 	}
 
-	public String getFinalValue() {
-		return finalValue;
+	public String getInitValue() {
+		return initValue;
 	}
 
-	public void setFinalValue(String finalValue) {
-		this.finalValue = finalValue;
+	public void setInitValue(String finalValue) {
+		this.initValue = finalValue;
+	}
+
+
+	public String getDexSubSig() {
+		return dexSubSig;
+	}
+
+
+	public void setDexSubSig(String dexSubSig) {
+		this.dexSubSig = dexSubSig;
 	}
 	
 }

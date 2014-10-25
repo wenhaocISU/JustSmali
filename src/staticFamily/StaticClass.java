@@ -153,6 +153,18 @@ public class StaticClass  implements Serializable{
 	
 	// utilities
 	
+	public StaticField getField(String fieldName) {
+		for (StaticField f : fields)
+			if (f.getName().equals(fieldName))
+				return f;
+		return null;
+	}
 	
+	public StaticMethod getMethod(String mSig) {
+		for (StaticMethod m : methods)
+			if (m.getSmaliSignature().equals(mSig))
+				return m;
+		return null;
+	}
 	
 }

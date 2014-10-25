@@ -8,12 +8,15 @@ public class StaticMethod  implements Serializable{
 
 	private String smaliSignature;
 	private String declaringClass;
+	private String returnType;
 	
 	private boolean isPublic, isPrivate, isProtected;
-	private boolean isInstance, isStatic;
+	private boolean isStatic, isFinal;
+	private boolean isConstructor;
 	
 	private String smaliCode;
 	private ArrayList<StaticStmt> smaliStmts = new ArrayList<StaticStmt>();
+	private ArrayList<String> parameterTypes = new ArrayList<String>();
 	
 	private ArrayList<Integer> sourceLineNumbers = new ArrayList<Integer>();
 	private int returnLineNumber;
@@ -25,6 +28,15 @@ public class StaticMethod  implements Serializable{
 	// Getters and Setters
 	public String getSmaliSignature() {
 		return smaliSignature;
+	}
+	
+	public String getSmaliSubSignature() {
+		return this.smaliSignature.substring(1, smaliSignature.length()-1).split("->")[1];
+	}
+	
+	public String getName() {
+		String subSig = this.getSmaliSubSignature();
+		return subSig.substring(0, subSig.indexOf("("));
 	}
 	
 	public void setSmaliSignature(String smaliSignature) {
@@ -64,12 +76,9 @@ public class StaticMethod  implements Serializable{
 	}
 
 	public boolean isInstance() {
-		return isInstance;
+		return !isStatic;
 	}
 
-	public void setInstance(boolean isInstance) {
-		this.isInstance = isInstance;
-	}
 
 	public boolean isStatic() {
 		return isStatic;
@@ -137,6 +146,38 @@ public class StaticMethod  implements Serializable{
 	public void addFieldRefSigs(String fieldRefSig) {
 		if (!this.fieldRefSigs.contains(fieldRefSig))
 			this.fieldRefSigs.add(fieldRefSig);
+	}
+
+	public boolean isConstructor() {
+		return isConstructor;
+	}
+
+	public void setConstructor(boolean isConstructor) {
+		this.isConstructor = isConstructor;
+	}
+
+	public boolean isFinal() {
+		return isFinal;
+	}
+
+	public void setFinal(boolean isFinal) {
+		this.isFinal = isFinal;
+	}
+
+	public ArrayList<String> getParameterTypes() {
+		return parameterTypes;
+	}
+
+	public void setParameterTypes(ArrayList<String> parameterTypes) {
+		this.parameterTypes = parameterTypes;
+	}
+
+	public String getReturnType() {
+		return returnType;
+	}
+
+	public void setReturnType(String returnType) {
+		this.returnType = returnType;
 	}
 	
 	

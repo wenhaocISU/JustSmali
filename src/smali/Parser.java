@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 
 import staticFamily.StaticApp;
 import staticFamily.StaticClass;
@@ -17,6 +18,7 @@ public class Parser {
 	private static File smaliFolder;
 	private static BufferedReader in;
 	private static String classSmali;
+	private static ArrayList<String> oldLines = new ArrayList<String>();
 	
 	public static void parseSmali(StaticApp theApp) {
 		
@@ -53,47 +55,63 @@ public class Parser {
 		}
 	}
 	
+	private static int index = 0;
+	
 	private static StaticClass parseSmaliCode(File f, final StaticClass c) {
-		int largestLineNumber = getLargestLineNumber(f);
+		int largestLineNumber = getLargestLineNumberAndMightAsWellGetOldLines(f);
 		classSmali = "";
-		try {
-			in = new BufferedReader(new FileReader(f));
-			String line;
-			// first line
-			if ((line = in.readLine())!=null) {
-				classSmali = line + "\n";
-				if (line.contains(" public "))		c.setPublic(true);
-				if (line.contains(" interface "))	c.setInterface(true);
-				if (line.contains(" final "))		c.setFinal(true);
-				if (line.contains(" abstract "))	c.setAbstract(true);
-			}
-			// before arriving method section
-			while ((line = in.readLine())!=null) {
-				classSmali += line + "\n";
-				if (line.equals("# direct methods") || line.equals("# virtual methods"))
-					break;
-				parsePreMethodSection(c, line);
-			}
-			// arrived method section
-			while ((line = in.readLine())!=null) {
-				classSmali += line + "\n";
-				//TODO when met constructor method, if class is not public
-				// check if it's private or protected.
-				if (line.startsWith(".method ")) {
-					StaticMethod m = new StaticMethod();
-					m.setDeclaringClass(c.getJavaName());
-					
-					while (!line.equals(".end method")) {
-						line = in.readLine();
-						classSmali += line + "\n";
+		index = 0;
+		int maxLine = oldLines.size();
+		String line;
+		// 1. first line
+		if (maxLine > 0) {
+			line = oldLines.get(index++);
+			classSmali = line + "\n";
+			if (line.contains(" public "))		c.setPublic(true);
+			if (line.contains(" interface "))	c.setInterface(true);
+			if (line.contains(" final "))		c.setFinal(true);
+			if (line.contains(" abstract "))	c.setAbstract(true);
+			if (line.contains(" private "))		c.setPrivate(true);
+			if (line.contains(" protected "))	c.setProtected(true);
+		}
+		// 2. before arriving method section
+		while (index < maxLine) {
+			line = oldLines.get(index++);
+			classSmali += line + "\n";
+			if (line.equals("# direct methods") || line.equals("# virtual methods"))
+				break;
+			parsePreMethodSection(c, line);
+		}
+		// 3. arrived method section
+		while (index < maxLine) {
+			line = oldLines.get(index++);
+			classSmali += line + "\n";
+			//TODO when met constructor method, if class is not public
+			// check if it's private or protected.
+			if (line.startsWith(".method ")) {
+				String methodSmali = line + "\n";
+				final StaticMethod m = initMethod(line, c);
+				while (!line.equals(".end method")) {
+					line = oldLines.get(index++);
+					classSmali += line + "\n";
+					methodSmali += line + "\n";
+					if (line.equals(""))	continue;
+					if (line.contains(" "))	line = line.trim();
+					if (line.startsWith("#"))	continue;
+					if (line.startsWith(".")) {
 						
 					}
-					c.addMethod(m);
+					else {
+						
+					}
 				}
+				m.setSmaliCode(methodSmali);
+				c.addMethod(m);
 			}
-			in.close();
-			File newF = new File(staticApp.outPath + "/apktool/newSmali/" + c.getJavaName().replace(".", "/") + ".smali");
-			newF.getParentFile().mkdirs();
+		}
+		File newF = new File(staticApp.outPath + "/apktool/newSmali/" + c.getJavaName().replace(".", "/") + ".smali");
+		newF.getParentFile().mkdirs();
+		try {
 			PrintWriter out = new PrintWriter(new FileWriter(newF));
 			out.write(classSmali);
 			out.close();
@@ -101,10 +119,33 @@ public class Parser {
 		return c;
 	}
 	
-	private static void parsePreMethodSection(StaticClass c, String line) throws Exception{
+	private static StaticMethod initMethod(String line, StaticClass c) {
+		String subSig = line.substring(line.lastIndexOf(" ")+1);
+		String fullSig = c.getDexName() + "->" + subSig;
+		StaticMethod m = c.getMethod(fullSig);
+		if (m == null) {
+			m = new StaticMethod();
+			m.setSmaliSignature(fullSig);
+		}
+		String returnType = subSig.substring(subSig.indexOf(")")+1);
+		m.setReturnType(Grammar.dexToJavaTypeName(returnType));
+		String parameters = subSig.substring(subSig.indexOf("(") + 1, subSig.indexOf(")"));
+		ArrayList<String> params = Grammar.parseParameters(parameters);
+		m.setParameterTypes(params);
+		m.setDeclaringClass(c.getJavaName());
+		if (line.contains(" public "))		m.setPublic(true);
+		if (line.contains(" private "))		m.setPrivate(true);
+		if (line.contains(" protected "))	m.setProtected(true);
+		if (line.contains(" static "))		m.setStatic(true);
+		if (line.contains(" final "))		m.setFinal(true);
+		if (line.contains(" constructor ")) m.setConstructor(true);
+		return m;
+	}
+	
+	private static void parsePreMethodSection(StaticClass c, String line){
 		if (line.startsWith(".super ")) {
 			String superClassName = line.substring(line.lastIndexOf(" ")+1);
-			c.setSuperClass(Grammar.dexToJavaClassName(superClassName));
+			c.setSuperClass(Grammar.dexToJavaTypeName(superClassName));
 		}
 		else if (line.startsWith(".source \"")) {
 			String sourceName = line.substring(line.lastIndexOf(".source ")+8).replace("\"", "");
@@ -117,19 +158,19 @@ public class Parser {
 		else if (line.startsWith(".annotation ")) {
 			if (line.equals(".annotation system Ldalvik/annotation/MemberClasses;")) {
 				while (!line.equals(".end annotation")) {
-					line = in.readLine();
+					line = oldLines.get(index++);
 					classSmali += line + "\n";
 					if (line.startsWith("        ")) {
 						String innerCN = line.trim();
 						if (innerCN.endsWith(","))
 							innerCN = innerCN.substring(0, innerCN.length()-1);
-						c.addInnerClass(Grammar.dexToJavaClassName(innerCN));
+						c.addInnerClass(Grammar.dexToJavaTypeName(innerCN));
 					}
 				}
 			}
 			else if (line.equals(".annotation system Ldalvik/annotation/EnclosingMethod;")) {
 				while (!line.equals(".end annotation")) {
-					line = in.readLine();
+					line = oldLines.get(index++);
 					classSmali += line + "\n";
 					if (line.startsWith("    value = ")) {
 						String mSig = line.substring(line.lastIndexOf(" = ")+3);
@@ -137,7 +178,7 @@ public class Parser {
 						StaticClass outerC = staticApp.findClassByDexName(dexC);
 						if (outerC == null) {
 							outerC = new StaticClass();
-							outerC.setJavaName(Grammar.dexToJavaClassName(dexC));
+							outerC.setJavaName(Grammar.dexToJavaTypeName(dexC));
 						}
 						outerC.addInnerClass(c.getJavaName());
 						c.setOuterClass(outerC.getJavaName());
@@ -146,14 +187,14 @@ public class Parser {
 			}
 			else if (line.equals(".annotation system Ldalvik/annotation/EnclosingClass;")) {
 				while (!line.equals(".end annotation")) {
-					line = in.readLine();
+					line = oldLines.get(index++);
 					classSmali += line + "\n";
 					if (line.startsWith("    value = ")) {
 						String dexC = line.substring(line.lastIndexOf(" = ")+3);
 						StaticClass outerC = staticApp.findClassByDexName(dexC);
 						if (outerC == null) {
 							outerC = new StaticClass();
-							outerC.setJavaName(Grammar.dexToJavaClassName(dexC));
+							outerC.setJavaName(Grammar.dexToJavaTypeName(dexC));
 						}
 						outerC.addInnerClass(c.getJavaName());
 						c.setOuterClass(outerC.getJavaName());
@@ -165,34 +206,38 @@ public class Parser {
 			}
 		}
 		else if (line.startsWith(".field ")) {
-			StaticField f = new StaticField();
+			String subSig = line.substring(line.lastIndexOf(" ")+1);
+			String initValue = "";
+			if (line.contains(" = ")) {
+				subSig = line.split(" = ")[0];
+				subSig = subSig.substring(subSig.lastIndexOf(" ")+1);
+				initValue = line.split(" = ")[1];
+			}
+			String name = subSig.split(":")[0];
+			String dexType = subSig.split(":")[1];
+			StaticField f = c.getField(name);
+			if (f == null) {
+				f = new StaticField();
+				f.setDexSubSig(subSig);
+			}
 			if (line.contains(" public "))		f.setPublic(true);
 			if (line.contains(" private "))		f.setPrivate(true);
 			if (line.contains(" protected "))	f.setProtected(true);
-			if (line.contains(" final "))		f.setFinal(true);
-			if (line.contains(" static "))		f.setStatic(true);
-										else	f.setInstance(true);
-			String nameType = line.substring(line.lastIndexOf(" ")+1);
-			if (f.isFinal() && line.contains(" = ")) {
-				System.out.println("-C- " + c.getJavaName() + ": " + line);
-				nameType = line.split(" = ")[0];
-				nameType = nameType.substring(nameType.lastIndexOf(" ")+1);
-				String finalValue = line.split(" = ")[1];
-				f.setFinalValue(finalValue);
-			}
-			String name = nameType.split(":")[0];
-			String dexType = nameType.split(":")[1];
-			f.setName(name);
-			f.setType(Grammar.dexToJavaClassName(dexType));
+			if (line.contains(" final ")) 		f.setFinal(true);
+			if (line.contains(" static "))	 	f.setStatic(true);
+			f.setInitValue(initValue);
+			f.setType(Grammar.dexToJavaTypeName(dexType));
 		}
 	}
 	
-	private static int getLargestLineNumber(File f) {
+	private static int getLargestLineNumberAndMightAsWellGetOldLines(File f) {
 		int result = 0;
 		try {
 			in = new BufferedReader(new FileReader(f));
 			String line;
+			oldLines = new ArrayList<String>();
 			while ((line = in.readLine())!=null) {
+				oldLines.add(line);
 				if (!line.startsWith("    .line "))
 					continue;
 				int current = Integer.parseInt(line.substring(line.lastIndexOf(" ")+1));
