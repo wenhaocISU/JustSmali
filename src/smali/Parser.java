@@ -6,11 +6,13 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.List;
 
 import staticFamily.StaticApp;
 import staticFamily.StaticClass;
 import staticFamily.StaticField;
 import staticFamily.StaticMethod;
+import staticFamily.StaticStmt;
 
 public class Parser {
 
@@ -84,13 +86,28 @@ public class Parser {
 		}
 		// 3. arrived method section
 		while (index < maxLine) {
+			int originalLineNumber = -1;
+			
 			line = oldLines.get(index++);
 			classSmali += line + "\n";
-			//TODO when met constructor method, if class is not public
-			// check if it's private or protected.
 			if (line.startsWith(".method ")) {
+				List<LocalVariable> vList = new ArrayList<LocalVariable>();
+				List<LocalVariable> pList = new ArrayList<LocalVariable>();
+
 				String methodSmali = line + "\n";
 				final StaticMethod m = initMethod(line, c);
+				int pIndex = 0;
+				if (!m.isStatic()) {
+					pIndex = 1;
+					LocalVariable pV = new LocalVariable();
+					pV.setDexName("p0");
+					pV.setType(c.getJavaName());
+					pList.add(pV);
+				}
+				for (int i = 0, len = m.getParameterTypes().size(); i < len; i++) {
+					LocalVariable pV = new LocalVariable();
+					pV.setDexName("p" + i);
+				}
 				while (!line.equals(".end method")) {
 					line = oldLines.get(index++);
 					classSmali += line + "\n";
@@ -98,9 +115,81 @@ public class Parser {
 					if (line.equals(""))	continue;
 					if (line.contains(" "))	line = line.trim();
 					if (line.startsWith("#"))	continue;
+					/**
+						.locals
+						.end local
+						.parameter
+						.end parameter
+						.prologue
+						.line
+						.end method
+						.annotation
+						.end annotation
+						.local
+						.catchall
+						.restart local
+						.sparse-switch
+						.end sparse-switch
+						.array-data
+						.end array-data
+						.catch
+						.packed-switch
+						.end packed-switch
+					* */
+					// Section 1 - dots
 					if (line.startsWith(".")) {
+						//	1.1 - '.line'
+						if (line.startsWith(".line")) {
+							originalLineNumber = Integer.parseInt(line.split(" ")[1]);
+							m.addSourceLineNumber(originalLineNumber);
+						}
+						//	1.2 - '.catch' 
+						else if (line.startsWith(".catch ")) {
+							String range = line.substring(line.indexOf("{")+1, line.indexOf("}"));
+							range = range.split(" .. ")[0];
+							String tgtLabel = line.substring(line.lastIndexOf(" :")+1);
+							String exceptionType = line.substring(line.indexOf(".catch ")+7, line.indexOf("; {"));
+							for (StaticStmt s : m.getSmaliStmts()) {
+								if (!s.getBlockLabel().getTryLabels().contains(range))
+									continue;
+								s.setHasCatch(true);
+								s.setCatchTgtLabel(tgtLabel);
+								s.setExceptionType(exceptionType);
+							}
+						}
+						// 1.3 - '.catchall'
+						else if (line.startsWith(".catchall ")) {
+							String range = line.substring(line.indexOf("{")+1, line.indexOf("}"));
+							range = range.split(" .. ")[0];
+							String tgtLabel = line.substring(line.lastIndexOf(" :")+1);
+							for (StaticStmt s : m.getSmaliStmts()) {
+								if (!s.getBlockLabel().getTryLabels().contains(range))
+									continue;
+								s.setHasFinally(true);
+								s.setFinallyTgtLabel(tgtLabel);
+							}
+						}
+						// 1.4 - '.locals'
+						else if (line.startsWith(".locals ")) {
+							int vCount = Integer.parseInt(line.split(" ")[1]);
+							m.setLocalVariableCount(vCount);
+							for (int i = 0; i < vCount; i++) {
+								LocalVariable lV = new LocalVariable();
+								lV.setDexName("v" + i);
+								vList.add(lV);
+							}
+						}
+						// 1.5 - '.local'
+						else if (line.startsWith(".local ")) {
+							//String 
+							
+						}
+					}
+					// Section 2 - colon
+					else if (line.startsWith(":")){
 						
 					}
+					// Section 3 - smali code
 					else {
 						
 					}

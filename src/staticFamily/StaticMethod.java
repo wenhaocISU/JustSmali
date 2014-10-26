@@ -10,6 +10,8 @@ public class StaticMethod  implements Serializable{
 	private String declaringClass;
 	private String returnType;
 	
+	private int localVariableCount = 0;
+	
 	private boolean isPublic, isPrivate, isProtected;
 	private boolean isStatic, isFinal;
 	private boolean isConstructor;
@@ -17,6 +19,7 @@ public class StaticMethod  implements Serializable{
 	private String smaliCode;
 	private ArrayList<StaticStmt> smaliStmts = new ArrayList<StaticStmt>();
 	private ArrayList<String> parameterTypes = new ArrayList<String>();
+	private ArrayList<String> parameterNames = new ArrayList<String>();
 	
 	private ArrayList<Integer> sourceLineNumbers = new ArrayList<Integer>();
 	private int returnLineNumber;
@@ -179,8 +182,22 @@ public class StaticMethod  implements Serializable{
 	public void setReturnType(String returnType) {
 		this.returnType = returnType;
 	}
-	
-	
-	
-	
+
+	public ArrayList<String> getParameterNames() {
+		return parameterNames;
+	}
+
+	public void addParameterName(String pN) {
+		this.parameterNames.add(pN);
+	}
+
+	public int getLocalVariableCount() {
+		return localVariableCount;
+	}
+
+	public void setLocalVariableCount(int localVariableCount) {
+		this.localVariableCount = localVariableCount;
+
+	}
+
 }

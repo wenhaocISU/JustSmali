@@ -9,9 +9,19 @@ public class StaticStmt implements Serializable{
 
 	private String theStmt = "";
 	private int stmtID = -1;
+	
 	private int originalLineNumber = -1;
 	private int newLineNumber = -1;
+	
+	private boolean hasCatch;
+	private boolean hasFinally;
+	private String exceptionType = "";
+	private String catchTgtLabel = "";
+	private String finallyTgtLabel = "";
+	
 	private boolean flowsThrough = true;
+	
+	
 	private BlockLabel blockLabel = new BlockLabel();
 	
 	public String getTheStmt() {
@@ -70,5 +80,46 @@ public class StaticStmt implements Serializable{
 		l.setNormalLabelSection(blockLabel.getNormalLabelSection());
 		this.blockLabel = l;
 	}
+
+	public boolean hasCatch() {
+		return hasCatch;
+	}
+
+	public void setHasCatch(boolean hasCatch) {
+		this.hasCatch = hasCatch;
+	}
+
+	public boolean hasFinally() {
+		return hasFinally;
+	}
+
+	public void setHasFinally(boolean hasFinally) {
+		this.hasFinally = hasFinally;
+	}
+
+	public String getCatchTgtLabel() {
+		return catchTgtLabel;
+	}
+
+	public void setCatchTgtLabel(String catchTgtLabel) {
+		this.catchTgtLabel = catchTgtLabel;
+	}
+
+	public String getFinallyTgtLabel() {
+		return finallyTgtLabel;
+	}
+
+	public void setFinallyTgtLabel(String finallyTgtLabel) {
+		this.finallyTgtLabel = finallyTgtLabel;
+	}
+
+	public String getExceptionType() {
+		return exceptionType;
+	}
+
+	public void setExceptionType(String exceptionType) {
+		this.exceptionType = exceptionType;
+	}
+
 	
 }
