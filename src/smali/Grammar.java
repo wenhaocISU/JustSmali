@@ -75,8 +75,8 @@ public class Grammar {
 	public static final String[] labelHeads = {
 		":cond",
 		":goto",
-		":catch", ":catchall", ":try_start", ":try_end", // can ignore
-		":array",										 // can ignore
+		":catch", ":catchall", ":try_start", ":try_end",
+		":array",
 		":sswitch_data", ":sswitch",
 		":pswitch_data", ":pswitch",
 	};

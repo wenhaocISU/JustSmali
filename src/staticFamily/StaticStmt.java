@@ -13,6 +13,8 @@ public class StaticStmt implements Serializable{
 	private int originalLineNumber = -1;
 	private int newLineNumber = -1;
 	
+	private String vA = "", vB = "", vC = "";
+	
 	private boolean hasCatch;
 	private boolean hasFinally;
 	private String exceptionType = "";
@@ -119,6 +121,30 @@ public class StaticStmt implements Serializable{
 
 	public void setExceptionType(String exceptionType) {
 		this.exceptionType = exceptionType;
+	}
+
+	public String getvA() {
+		return vA;
+	}
+
+	public void setvA(String vA) {
+		this.vA = vA;
+	}
+
+	public String getvB() {
+		return vB;
+	}
+
+	public void setvB(String vB) {
+		this.vB = vB;
+	}
+
+	public String getvC() {
+		return vC;
+	}
+
+	public void setvC(String vC) {
+		this.vC = vC;
 	}
 
 	

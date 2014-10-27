@@ -197,14 +197,17 @@ public class StmtFormat {
 			"move-exception"
 	));
 	
-	
-	
-	
-	
+
 	
 	public static boolean isArrayPut(String l) {
 		if (l.contains(" "))
 			return arrayPutFormat.contains(l.split(" ")[0]);
+		return false;
+	}
+	
+	public static boolean isFillArray(String l) {
+		if (l.contains(" "))
+			return l.split(" ")[0].equals(arrayPutFormat.get(0));
 		return false;
 	}
 	

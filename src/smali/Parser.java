@@ -6,8 +6,12 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
+import smali.stmt.ArrayStmt;
+import smali.stmt.CheckCastStmt;
+import smali.stmt.SwitchStmt;
 import staticFamily.StaticApp;
 import staticFamily.StaticClass;
 import staticFamily.StaticField;
@@ -21,6 +25,8 @@ public class Parser {
 	private static BufferedReader in;
 	private static String classSmali;
 	private static ArrayList<String> oldLines = new ArrayList<String>();
+	private static BlockLabel label;
+	private static boolean normalLabelAlreadyUsed;
 	
 	public static void parseSmali(StaticApp theApp) {
 		
@@ -86,115 +92,41 @@ public class Parser {
 		}
 		// 3. arrived method section
 		while (index < maxLine) {
-			int originalLineNumber = -1;
-			
 			line = oldLines.get(index++);
+			int originalLineNumber = -1;
 			classSmali += line + "\n";
 			if (line.startsWith(".method ")) {
-				List<LocalVariable> vList = new ArrayList<LocalVariable>();
-				List<LocalVariable> pList = new ArrayList<LocalVariable>();
-
-				String methodSmali = line + "\n";
 				final StaticMethod m = initMethod(line, c);
-				int pIndex = 0;
-				if (!m.isStatic()) {
-					pIndex = 1;
-					LocalVariable pV = new LocalVariable();
-					pV.setDexName("p0");
-					pV.setType(c.getJavaName());
-					pList.add(pV);
-				}
-				for (int i = 0, len = m.getParameterTypes().size(); i < len; i++) {
-					LocalVariable pV = new LocalVariable();
-					pV.setDexName("p" + i);
-				}
+				label = new BlockLabel();
+				normalLabelAlreadyUsed = false;
+				m.setSmaliCode(line+ "\n");
 				while (!line.equals(".end method")) {
 					line = oldLines.get(index++);
 					classSmali += line + "\n";
-					methodSmali += line + "\n";
+					m.setSmaliCode(m.getSmaliCode() + line + "\n");
 					if (line.equals(""))	continue;
-					if (line.contains(" "))	line = line.trim();
+					if (line.contains(" "))
+						line = line.trim();
 					if (line.startsWith("#"))	continue;
-					/**
-						.locals
-						.end local
-						.parameter
-						.end parameter
-						.prologue
-						.line
-						.end method
-						.annotation
-						.end annotation
-						.local
-						.catchall
-						.restart local
-						.sparse-switch
-						.end sparse-switch
-						.array-data
-						.end array-data
-						.catch
-						.packed-switch
-						.end packed-switch
-					* */
-					// Section 1 - dots
 					if (line.startsWith(".")) {
-						//	1.1 - '.line'
 						if (line.startsWith(".line")) {
 							originalLineNumber = Integer.parseInt(line.split(" ")[1]);
 							m.addSourceLineNumber(originalLineNumber);
 						}
-						//	1.2 - '.catch' 
-						else if (line.startsWith(".catch ")) {
-							String range = line.substring(line.indexOf("{")+1, line.indexOf("}"));
-							range = range.split(" .. ")[0];
-							String tgtLabel = line.substring(line.lastIndexOf(" :")+1);
-							String exceptionType = line.substring(line.indexOf(".catch ")+7, line.indexOf("; {"));
-							for (StaticStmt s : m.getSmaliStmts()) {
-								if (!s.getBlockLabel().getTryLabels().contains(range))
-									continue;
-								s.setHasCatch(true);
-								s.setCatchTgtLabel(tgtLabel);
-								s.setExceptionType(exceptionType);
-							}
-						}
-						// 1.3 - '.catchall'
-						else if (line.startsWith(".catchall ")) {
-							String range = line.substring(line.indexOf("{")+1, line.indexOf("}"));
-							range = range.split(" .. ")[0];
-							String tgtLabel = line.substring(line.lastIndexOf(" :")+1);
-							for (StaticStmt s : m.getSmaliStmts()) {
-								if (!s.getBlockLabel().getTryLabels().contains(range))
-									continue;
-								s.setHasFinally(true);
-								s.setFinallyTgtLabel(tgtLabel);
-							}
-						}
-						// 1.4 - '.locals'
-						else if (line.startsWith(".locals ")) {
-							int vCount = Integer.parseInt(line.split(" ")[1]);
-							m.setLocalVariableCount(vCount);
-							for (int i = 0; i < vCount; i++) {
-								LocalVariable lV = new LocalVariable();
-								lV.setDexName("v" + i);
-								vList.add(lV);
-							}
-						}
-						// 1.5 - '.local'
-						else if (line.startsWith(".local ")) {
-							//String 
-							
+						else {
+							parseDots(m, line);
 						}
 					}
-					// Section 2 - colon
 					else if (line.startsWith(":")){
-						
+						parseColons(m, line);
 					}
-					// Section 3 - smali code
 					else {
-						
+						StaticStmt s = parseStmt(m, line);
+						s.setTheStmt(line);
+						s.setBlockLabel(label);
+						m.addSmaliStmt(s);
 					}
 				}
-				m.setSmaliCode(methodSmali);
 				c.addMethod(m);
 			}
 		}
@@ -208,6 +140,146 @@ public class Parser {
 		return c;
 	}
 	
+	private static StaticStmt parseStmt(StaticMethod m, String line) {
+		if (StmtFormat.isArrayGet(line) || StmtFormat.isArrayPut(line)) {
+			ArrayStmt s = new ArrayStmt();
+			s.setIsGet(StmtFormat.isArrayGet(line));
+			s.setIsPut(StmtFormat.isArrayPut(line));
+			s.setIsFill(StmtFormat.isFillArray(line));
+			String arguments[] = line.substring(0, line.indexOf(" ")+1).split(", ");
+			s.setvA(arguments[0]);
+			if (!s.isFill()) {
+				s.setvB(arguments[1]);
+				s.setvC(arguments[2]);
+			}
+			return s;
+		}
+		if (StmtFormat.isCheckCast(line)) {
+			CheckCastStmt s = new CheckCastStmt();
+			String arguments[] = line.substring(0, line.indexOf(" ")+1).split(", ");
+			s.setvA(arguments[0]);
+			s.setvB(Grammar.parseParameters(arguments[1]).get(0));
+		}
+		if (StmtFormat.isConst(line)) {
+			
+		}
+		if (StmtFormat.isGetField(line) || StmtFormat.isPutField(line)) {
+			
+		}
+		if (StmtFormat.isGoto(line)) {
+			
+		}
+		if (StmtFormat.isIfStmt(line)) {
+			
+		}
+		if (StmtFormat.isInvoke(line)) {
+			
+		}
+		if (StmtFormat.isMove(line)) {
+			
+		}
+		if (StmtFormat.isMoveResult(line)) {
+			
+		}
+		if (StmtFormat.isNew(line)) {
+			
+		}
+		if (StmtFormat.isReturn(line)) {
+			
+		}
+		if (StmtFormat.isSwitch(line)) {
+			
+		}
+		if (StmtFormat.isThrow(line)) {
+			
+		}
+		if (StmtFormat.isV2OP(line)) {
+			
+		}
+		if (StmtFormat.isV3OP(line)) {
+			
+		}
+		StaticStmt s = new StaticStmt();
+		s.setTheStmt(line);
+		return s;
+	}
+
+	private static void parseColons(StaticMethod m, String line) {
+		
+		if (line.startsWith(":array_")) {
+			String aLabel = line;
+			String tableContent = "";
+			while (!line.equals(".end array_data")) {
+				line = oldLines.get(index++);
+				classSmali += line + "\n";
+				m.setSmaliCode(m.getSmaliCode() + line + "\n");
+				tableContent += line + "\n";
+				if (line.contains(" "))
+					line.trim();
+			}
+			for (StaticStmt s : m.getSmaliStmts()) {
+				if (s instanceof ArrayStmt) {
+					ArrayStmt aS = (ArrayStmt) s;
+					if (aS.isFill() && aS.getFillTabelLabel().equals(aLabel)) {
+						aS.setFillTableContent(tableContent);
+					}
+				}
+			}
+		}
+		else if (line.startsWith(":sswitch_data_") || line.startsWith(":pswtich_data_")) {
+			String sLabel = line;
+			SwitchStmt ss = null;
+			Map<String, String> switchMap = new HashMap<String, String>();
+			for (StaticStmt s : m.getSmaliStmts()) {
+				if (s instanceof SwitchStmt && ((SwitchStmt) s).getSwitchMapLabel().equals(sLabel)) {
+					ss = (SwitchStmt) s;
+				}
+			}
+			while (!line.equals(".end sparse-switch") && !line.equals(".end packed-switch")) {
+				line = oldLines.get(index++);
+				classSmali += line + "\n";
+				m.setSmaliCode(m.getSmaliCode() + line + "\n");
+				if (line.contains(" "))
+					line = line.trim();
+				if (ss.isPswitch()) {
+					int psindex = 0;
+					if (line.startsWith(".packed-switch"))
+						ss.setpSwitchInitValue(line.split(" ")[1]);
+					else if (line.startsWith(":")) {
+						switchMap.put(""+psindex++, line);
+					}
+				}
+				else if (ss.isSswitch()){
+					if (line.contains(" -> ")) {
+						String value = line.split(" -> ")[0];
+						String tgtLabel = line.split(" -> ")[1];
+						switchMap.put(value, tgtLabel);
+					}
+				}
+			}
+			ss.setSwitchMap(switchMap);
+		}
+		else if (line.startsWith(":try_start_")){
+			label.addTryLabel(line);
+		}
+		else if (line.startsWith(":try_end_")) {
+			ArrayList<String> newTL = label.getTryLabels();
+			newTL.remove(line.replace("_end_", "_start_"));
+			label.setTryLabels(newTL);
+		}
+		else {
+			if (normalLabelAlreadyUsed) {
+				ArrayList<String> newNL = new ArrayList<String>();
+				newNL.add(line);
+				label.setNormalLabels(newNL);
+				label.setNormalLabelSection(0);
+				normalLabelAlreadyUsed = false;
+			} else {
+				label.addNormalLabel(line);
+			}
+		}
+	}
+
 	private static StaticMethod initMethod(String line, StaticClass c) {
 		String subSig = line.substring(line.lastIndexOf(" ")+1);
 		String fullSig = c.getDexName() + "->" + subSig;
@@ -230,6 +302,51 @@ public class Parser {
 		if (line.contains(" constructor ")) m.setConstructor(true);
 		return m;
 	}
+	
+	private static void parseDots(StaticMethod m, String line) {
+		//	1.2 - '.catch' 
+		if (line.startsWith(".catch ")) {
+			String range = line.substring(line.indexOf("{")+1, line.indexOf("}"));
+			range = range.split(" .. ")[0];
+			String tgtLabel = line.substring(line.lastIndexOf(" :")+1);
+			String exceptionType = line.substring(line.indexOf(".catch ")+7, line.indexOf("; {"));
+			for (StaticStmt s : m.getSmaliStmts()) {
+				if (!s.getBlockLabel().getTryLabels().contains(range))
+					continue;
+				s.setHasCatch(true);
+				s.setCatchTgtLabel(tgtLabel);
+				s.setExceptionType(exceptionType);
+			}
+		}
+		// 1.3 - '.catchall'
+		else if (line.startsWith(".catchall ")) {
+			String range = line.substring(line.indexOf("{")+1, line.indexOf("}"));
+			range = range.split(" .. ")[0];
+			String tgtLabel = line.substring(line.lastIndexOf(" :")+1);
+			for (StaticStmt s : m.getSmaliStmts()) {
+				if (!s.getBlockLabel().getTryLabels().contains(range))
+					continue;
+				s.setHasFinally(true);
+				s.setFinallyTgtLabel(tgtLabel);
+			}
+		}
+		// 1.4 - '.locals'
+		else if (line.startsWith(".locals ")) {
+			int vCount = Integer.parseInt(line.split(" ")[1]);
+			m.setLocalVariableCount(vCount);
+		}
+		// 1.5 - '.annotation'
+		else if (line.startsWith(".annotation")) {
+			while (!line.equals(".end annotation")) {
+				line = oldLines.get(index++);
+				classSmali += line + "\n";
+				m.setSmaliCode(m.getSmaliCode() + line + "\n");
+				if (line.contains(" "))
+					line = line.trim();
+			}
+		}
+	}
+	
 	
 	private static void parsePreMethodSection(StaticClass c, String line){
 		if (line.startsWith(".super ")) {

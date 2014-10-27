@@ -1,5 +1,8 @@
 package smali.stmt;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import staticFamily.StaticStmt;
 
 @SuppressWarnings("serial")
@@ -9,6 +12,8 @@ public class SwitchStmt extends StaticStmt{
 	private boolean isSswitch;
 	private String switchMapLabel;
 	private String pSwitchInitValue;
+	private Map<String, String> switchMap = new HashMap<String, String>();
+	
 	public boolean isPswitch() {
 		return isPswitch;
 	}
@@ -32,6 +37,12 @@ public class SwitchStmt extends StaticStmt{
 	}
 	public void setpSwitchInitValue(String pSwitchInitValue) {
 		this.pSwitchInitValue = pSwitchInitValue;
+	}
+	public Map<String, String> getSwitchMap() {
+		return switchMap;
+	}
+	public void setSwitchMap(Map<String, String> switchMap) {
+		this.switchMap = switchMap;
 	}
 	
 }
