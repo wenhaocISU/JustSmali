@@ -11,6 +11,7 @@ import java.util.Map;
 
 import smali.stmt.ArrayStmt;
 import smali.stmt.CheckCastStmt;
+import smali.stmt.ConstStmt;
 import smali.stmt.SwitchStmt;
 import staticFamily.StaticApp;
 import staticFamily.StaticClass;
@@ -161,7 +162,10 @@ public class Parser {
 			s.setvB(Grammar.parseParameters(arguments[1]).get(0));
 		}
 		if (StmtFormat.isConst(line)) {
-			
+			ConstStmt s = new ConstStmt();
+			String arguments[] = line.substring(0, line.indexOf(" ")+1).split(", ");
+			s.setvA(arguments[0]);
+			s.setvB(Grammar.parseParameters(arguments[1]).get(0));
 		}
 		if (StmtFormat.isGetField(line) || StmtFormat.isPutField(line)) {
 			
