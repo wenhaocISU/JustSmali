@@ -141,6 +141,18 @@ public class Parser {
 						s.setStmtID(stmtID++);
 						s.setTheStmt(line);
 						s.setBlockLabel(label);
+						normalLabelAlreadyUsed = true;
+						if (originalLineNumber == -1) {
+							s.setNewLineNumber(largestLineNumber++);
+							String left = classSmali.substring(0, classSmali.lastIndexOf("\n\n")+2);
+							String right = classSmali.substring(classSmali.lastIndexOf("\n\n")+2);
+							classSmali = left + "    .line " + s.getSourceLineNumber() + "\n" + right;
+						}
+						else {
+							s.setOriginalLineNumber(originalLineNumber);
+							originalLineNumber = -1;
+						}
+						m.addSourceLineNumber(s.getSourceLineNumber());
 						m.addSmaliStmt(s);
 					}
 				}
@@ -571,7 +583,7 @@ public class Parser {
 					result = current;
 			}
 		}	catch (Exception e) {e.printStackTrace();}
-		return result;
+		return result+1;
 	}
 
 	

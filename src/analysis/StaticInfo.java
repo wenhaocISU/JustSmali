@@ -11,7 +11,7 @@ import smali.Parser;
 import staticFamily.StaticApp;
 import tools.Apktool;
 
-public class Basic {
+public class StaticInfo {
 
 	private static StaticApp staticApp;
 	
