@@ -8,6 +8,7 @@ public class ArrayStmt extends StaticStmt{
 	private boolean isPut = false;
 	private boolean isGet = false;
 	private boolean isFill = false;
+	
 	private String fillTabelLabel = "";
 	private String fillTableContent = "";
 	

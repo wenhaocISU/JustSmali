@@ -14,6 +14,10 @@ public class SwitchStmt extends StaticStmt{
 	private String pSwitchInitValue;
 	private Map<String, String> switchMap = new HashMap<String, String>();
 	
+	public String getSwitchV() {
+		return getvA();
+	}
+	
 	public boolean isPswitch() {
 		return isPswitch;
 	}
@@ -23,7 +27,7 @@ public class SwitchStmt extends StaticStmt{
 	public boolean isSswitch() {
 		return isSswitch;
 	}
-	public void setSswitch(boolean isSswitch) {
+	public void setISSswitch(boolean isSswitch) {
 		this.isSswitch = isSswitch;
 	}
 	public String getSwitchMapLabel() {

@@ -16,7 +16,13 @@ import smali.stmt.FieldStmt;
 import smali.stmt.GotoStmt;
 import smali.stmt.IfStmt;
 import smali.stmt.InvokeStmt;
+import smali.stmt.MoveStmt;
+import smali.stmt.NewStmt;
+import smali.stmt.ReturnStmt;
 import smali.stmt.SwitchStmt;
+import smali.stmt.ThrowStmt;
+import smali.stmt.V2OPStmt;
+import smali.stmt.V3OPStmt;
 import staticFamily.StaticApp;
 import staticFamily.StaticClass;
 import staticFamily.StaticField;
@@ -103,9 +109,9 @@ public class Parser {
 		// 3. arrived method section
 		while (index < maxLine) {
 			line = oldLines.get(index++);
-			int originalLineNumber = -1;
 			classSmali += line + "\n";
 			if (line.startsWith(".method ")) {
+				int originalLineNumber = -1, stmtID = 0;
 				final StaticMethod m = initMethod(line, c);
 				label = new BlockLabel();
 				normalLabelAlreadyUsed = false;
@@ -132,6 +138,7 @@ public class Parser {
 					}
 					else {
 						StaticStmt s = parseStmt(m, line);
+						s.setStmtID(stmtID++);
 						s.setTheStmt(line);
 						s.setBlockLabel(label);
 						m.addSmaliStmt(s);
@@ -151,6 +158,7 @@ public class Parser {
 	}
 	
 	private static StaticStmt parseStmt(StaticMethod m, String line) {
+		
 		if (StmtFormat.isArrayGet(line) || StmtFormat.isArrayPut(line)) {
 			ArrayStmt s = new ArrayStmt();
 			s.setIsGet(StmtFormat.isArrayGet(line));
@@ -228,6 +236,7 @@ public class Parser {
 			String arguments = line.substring(line.indexOf(" ")+1);
 			String param = arguments.substring(0, arguments.lastIndexOf(", "));
 			param = param.substring(1, param.length()-1);
+			s.setParams(param);
 			String methodSig = arguments.substring(arguments.lastIndexOf(", ")+2);
 			String tgtCN = methodSig.split("->")[0];
 			StaticClass tgtC = staticApp.findClassByDexName(tgtCN);
@@ -243,29 +252,75 @@ public class Parser {
 			}
 			return s;
 		}
-		if (StmtFormat.isMove(line)) {
-			
-		}
-		if (StmtFormat.isMoveResult(line)) {
-			
+		if (StmtFormat.isMove(line) || StmtFormat.isMoveResult(line)) {
+			MoveStmt s = new MoveStmt();
+			if (StmtFormat.isMoveResult(line)) {
+				s.setvA(line.substring(line.indexOf(" ")+1));
+				StaticStmt lastS = m.getSmaliStmts().get(m.getSmaliStmts().size()-1);
+				if (lastS instanceof InvokeStmt) {
+					((InvokeStmt) lastS).setResultsMoved(true);
+				}
+				else if (lastS instanceof NewStmt) {
+					if (((NewStmt) lastS).isNewArray())
+						((NewStmt) lastS).setNewArrayMoved(true);
+				}
+				else {System.out.println("something's wrong..\n\t" + m.getSmaliSignature() + "\n");}
+			}
+			else {
+				String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
+				s.setvA(arguments[0]);
+				s.setvB(arguments[1]);
+			}
+			return s;
 		}
 		if (StmtFormat.isNew(line)) {
-			
+			NewStmt s = new NewStmt();
+			if (line.startsWith("new-instance "))
+				s.setNewInstance(true);
+			else s.setNewArray(true);
+			s.setArguments(line.substring(line.indexOf(" ")+1));
+			return s;
 		}
 		if (StmtFormat.isReturn(line)) {
-			
+			ReturnStmt s = new ReturnStmt();
+			s.setFlowsThrough(false);
+			return s;
 		}
 		if (StmtFormat.isSwitch(line)) {
-			
+			SwitchStmt s = new SwitchStmt();
+			String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
+			s.setvA(arguments[0]);
+			s.setSwitchMapLabel(arguments[1]);
+			s.setIsPswitch(line.startsWith("packed-switch"));
+			s.setISSswitch(line.startsWith("sparse-switch"));
+			s.setFlowsThrough(false);
+			return s;
 		}
 		if (StmtFormat.isThrow(line)) {
-			
+			ThrowStmt s = new ThrowStmt();
+			String vA = line.substring(line.indexOf(" ")+1);
+			s.setvA(vA);
+			s.setFlowsThrough(false);
+			return s;
 		}
 		if (StmtFormat.isV2OP(line)) {
-			
+			V2OPStmt s = new V2OPStmt();
+			String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
+			s.setvA(arguments[0]);
+			s.setvB(arguments[1]);
+			if (arguments.length > 2) {
+				s.setHas3rdConstArg(true);
+				s.setvC(arguments[2]);
+			}
+			return s;
 		}
 		if (StmtFormat.isV3OP(line)) {
-			
+			V3OPStmt s = new V3OPStmt();
+			String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
+			s.setvA(arguments[0]);
+			s.setvB(arguments[1]);
+			s.setvC(arguments[2]);
+			return s;
 		}
 		StaticStmt s = new StaticStmt();
 		return s;
@@ -360,7 +415,7 @@ public class Parser {
 		String parameters = subSig.substring(subSig.indexOf("(") + 1, subSig.indexOf(")"));
 		ArrayList<String> params = Grammar.parseParameters(parameters);
 		m.setParameterTypes(params);
-		m.setDeclaringClass(c.getJavaName());
+		m.setDeclaringClass(c.getDexName());
 		if (line.contains(" public "))		m.setPublic(true);
 		if (line.contains(" private "))		m.setPrivate(true);
 		if (line.contains(" protected "))	m.setProtected(true);

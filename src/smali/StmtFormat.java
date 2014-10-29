@@ -157,7 +157,7 @@ public class StmtFormat {
 			"neg-int", "not-int",
 			"neg-long", "not-long",
 			"neg-float",
-			"neg-double", "neg-double",
+			"neg-double",
 			
 			"int-to-long", "int-to-float", "int-to-double",
 			"long-to-int", "long-to-float", "long-to-double",

@@ -7,6 +7,14 @@ public class MoveStmt extends StaticStmt{
 
 	private int resultMovedFrom = -1;
 	
+	public String getDestV() {
+		return getvA();
+	}
+	
+	public String getSourceV() {
+		return getvB();
+	}
+	
 	public boolean isMoveResult() {
 		return (this.getTheStmt().startsWith("move-result"));
 	}

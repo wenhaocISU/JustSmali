@@ -6,6 +6,7 @@ import staticFamily.StaticStmt;
 public class InvokeStmt extends StaticStmt{
 
 	private String targetSig;
+	private String params;
 	
 	private boolean resultsMoved;
 
@@ -23,6 +24,14 @@ public class InvokeStmt extends StaticStmt{
 
 	public void setResultsMoved(boolean resultsMoved) {
 		this.resultsMoved = resultsMoved;
+	}
+
+	public String getParams() {
+		return params;
+	}
+
+	public void setParams(String params) {
+		this.params = params;
 	}
 	
 }
