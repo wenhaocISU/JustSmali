@@ -121,5 +121,12 @@ public class StaticField  implements Serializable{
 	public void setDexSubSig(String dexSubSig) {
 		this.dexSubSig = dexSubSig;
 	}
+
+
+	public String getDexSignature() {
+		return declaringClassName + "->" + dexSubSig;
+	}
+
+
 	
 }

@@ -317,6 +317,18 @@ public class StmtFormat {
 		return (l.startsWith(throwFormat + " "));
 	}
 	
-
+	public static boolean is2VIf(String l) {
+		int i = ifFormat.indexOf(l.substring(0, l.indexOf(" ")));
+		if (i > -1 && i < 6)
+			return true;
+		return false;
+	}
+	
+	public static boolean is1VIf(String l) {
+		int i = ifFormat.indexOf(l.substring(0, l.indexOf(" ")));
+		if (i < ifFormat.size() && i > 5)
+			return true;
+		return false;
+	}
 	
 }

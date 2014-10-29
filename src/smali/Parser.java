@@ -12,6 +12,10 @@ import java.util.Map;
 import smali.stmt.ArrayStmt;
 import smali.stmt.CheckCastStmt;
 import smali.stmt.ConstStmt;
+import smali.stmt.FieldStmt;
+import smali.stmt.GotoStmt;
+import smali.stmt.IfStmt;
+import smali.stmt.InvokeStmt;
 import smali.stmt.SwitchStmt;
 import staticFamily.StaticApp;
 import staticFamily.StaticClass;
@@ -35,7 +39,8 @@ public class Parser {
 		smaliFolder = new File(staticApp.outPath + "/apktool/smali/");
 		System.out.println("parsing smali files...");
 		for (File f : smaliFolder.listFiles())
-			parseFile(f);
+			initClasses(f);
+		parseFiles();
 		File original = new File(staticApp.outPath + "/apktool/smali/");
 		File instrumented = new File(staticApp.outPath + "/apktool/newSmali/");
 		System.out.println("\nmoving original smali files into /apktool/oldSmali/...");
@@ -44,23 +49,27 @@ public class Parser {
 		instrumented.renameTo(new File(staticApp.outPath + "/apktool/smali/"));
 	}
 	
-	private static void parseFile(File f) {
+	private static void initClasses(File f) {
 		if (f.isDirectory())
 			for (File subF : f.listFiles())
-				parseFile(subF);
+				initClasses(subF);
 		else if (f.isFile() && f.getName().endsWith(".smali")) {
 			String className = f.getAbsolutePath();
 			className = className.substring(
 					className.indexOf(smaliFolder.getAbsolutePath()) + smaliFolder.getAbsolutePath().length()+1,
 					className.lastIndexOf(".smali"));
 			className = className.replace(File.separator, ".");
-			StaticClass c = staticApp.findClassByJavaName(className);
-			if (c == null)
-				c = new StaticClass();
-			c.setInDEX(true);
+			StaticClass c = new StaticClass();
 			c.setJavaName(className);
-			c = parseSmaliCode(f, c);
+			c.setInDEX(true);
 			staticApp.addClass(c);
+		}
+	}
+
+	private static void parseFiles() {
+		for (StaticClass c : staticApp.getClasses()) {
+			File f = new File(staticApp.outPath + "/apktool/smali/" + c.getJavaName().replace(".", "/") + ".smali");
+			c = parseSmaliCode(f, c);
 		}
 	}
 	
@@ -101,7 +110,7 @@ public class Parser {
 				label = new BlockLabel();
 				normalLabelAlreadyUsed = false;
 				m.setSmaliCode(line+ "\n");
-				while (!line.equals(".end method")) {
+				while (!line.equals(".end method")  && index < oldLines.size()) {
 					line = oldLines.get(index++);
 					classSmali += line + "\n";
 					m.setSmaliCode(m.getSmaliCode() + line + "\n");
@@ -147,7 +156,7 @@ public class Parser {
 			s.setIsGet(StmtFormat.isArrayGet(line));
 			s.setIsPut(StmtFormat.isArrayPut(line));
 			s.setIsFill(StmtFormat.isFillArray(line));
-			String arguments[] = line.substring(0, line.indexOf(" ")+1).split(", ");
+			String arguments[] = line.substring(line.indexOf(" ")+1).split(", ");
 			s.setvA(arguments[0]);
 			if (!s.isFill()) {
 				s.setvB(arguments[1]);
@@ -157,27 +166,82 @@ public class Parser {
 		}
 		if (StmtFormat.isCheckCast(line)) {
 			CheckCastStmt s = new CheckCastStmt();
-			String arguments[] = line.substring(0, line.indexOf(" ")+1).split(", ");
+			String arguments[] = line.substring(line.indexOf(" ")+1).split(", ");
 			s.setvA(arguments[0]);
 			s.setvB(Grammar.parseParameters(arguments[1]).get(0));
+			return s;
 		}
 		if (StmtFormat.isConst(line)) {
 			ConstStmt s = new ConstStmt();
-			String arguments[] = line.substring(0, line.indexOf(" ")+1).split(", ");
+			String arguments[] = line.substring(line.indexOf(" ")+1).split(", ");
 			s.setvA(arguments[0]);
-			s.setvB(Grammar.parseParameters(arguments[1]).get(0));
+			s.setvB(arguments[1]);
+			return s;
 		}
 		if (StmtFormat.isGetField(line) || StmtFormat.isPutField(line)) {
-			
+			FieldStmt s = new FieldStmt();
+			s.setIsGet(StmtFormat.isGetField(line));
+			s.setIsPut(StmtFormat.isPutField(line));
+			String arguments[] = line.substring(line.indexOf(" ")+1).split(", ");
+			s.setvA(arguments[0]);
+			s.setvB(arguments[1]);
+			if (line.startsWith("s"))	s.setStatic(true);
+			else s.setvC(arguments[2]);
+			String fieldSig = s.getvC();
+			if (s.isStatic())	fieldSig = s.getvB();
+			String tgtCN = fieldSig.split("->")[0];
+			String fSubSig = fieldSig.split("->")[1];
+			StaticClass tgtC = staticApp.findClassByDexName(tgtCN);
+			if (tgtC != null) {
+				StaticField tgtF = tgtC.getField(fSubSig.split(":")[0]);
+				if (tgtF == null){
+					tgtF = new StaticField();
+					tgtF.setDexSubSig(fSubSig);
+					tgtC.addField(tgtF);
+				}
+				tgtF.addInCallSourceSig(m.getSmaliSignature());
+				m.addFieldRefSigs(tgtF.getDexSignature());
+			}
+			return s;
 		}
 		if (StmtFormat.isGoto(line)) {
-			
+			GotoStmt s = new GotoStmt();
+			String tgtLabel = line.substring(line.indexOf(" ")+1);
+			s.setTargetLabel(tgtLabel);
+			s.setFlowsThrough(false);
+			return s;
 		}
 		if (StmtFormat.isIfStmt(line)) {
-			
+			IfStmt s = new IfStmt();
+			s.setHas1V(StmtFormat.is1VIf(line));
+			s.setHas2V(StmtFormat.is2VIf(line));
+			String arguments[] = line.substring(line.indexOf(" ")+1).split(", ");
+			s.setvA(arguments[0]);
+			s.setvB(arguments[1]);
+			if (s.has2V())
+				s.setvC(arguments[2]);
+			s.setFlowsThrough(false);
+			return s;
 		}
 		if (StmtFormat.isInvoke(line)) {
-			
+			InvokeStmt s = new InvokeStmt();
+			String arguments = line.substring(line.indexOf(" ")+1);
+			String param = arguments.substring(0, arguments.lastIndexOf(", "));
+			param = param.substring(1, param.length()-1);
+			String methodSig = arguments.substring(arguments.lastIndexOf(", ")+2);
+			String tgtCN = methodSig.split("->")[0];
+			StaticClass tgtC = staticApp.findClassByDexName(tgtCN);
+			if (tgtC != null) {
+				StaticMethod tgtM = tgtC.getMethod(methodSig);
+				if (tgtM == null) {
+					tgtM = new StaticMethod();
+					tgtM.setSmaliSignature(methodSig);
+					tgtC.addMethod(tgtM);
+				}
+				tgtM.addInCallSourceSig(m.getSmaliSignature());
+				m.addOutCallTargetSigs(tgtM.getSmaliSignature());
+			}
+			return s;
 		}
 		if (StmtFormat.isMove(line)) {
 			
@@ -204,7 +268,6 @@ public class Parser {
 			
 		}
 		StaticStmt s = new StaticStmt();
-		s.setTheStmt(line);
 		return s;
 	}
 
@@ -213,13 +276,13 @@ public class Parser {
 		if (line.startsWith(":array_")) {
 			String aLabel = line;
 			String tableContent = "";
-			while (!line.equals(".end array_data")) {
+			while (!line.equals(".end array_data") && index < oldLines.size()) {
 				line = oldLines.get(index++);
 				classSmali += line + "\n";
 				m.setSmaliCode(m.getSmaliCode() + line + "\n");
 				tableContent += line + "\n";
 				if (line.contains(" "))
-					line.trim();
+					line = line.trim();
 			}
 			for (StaticStmt s : m.getSmaliStmts()) {
 				if (s instanceof ArrayStmt) {
@@ -232,14 +295,14 @@ public class Parser {
 		}
 		else if (line.startsWith(":sswitch_data_") || line.startsWith(":pswtich_data_")) {
 			String sLabel = line;
-			SwitchStmt ss = null;
+			SwitchStmt ss = new SwitchStmt();
 			Map<String, String> switchMap = new HashMap<String, String>();
 			for (StaticStmt s : m.getSmaliStmts()) {
 				if (s instanceof SwitchStmt && ((SwitchStmt) s).getSwitchMapLabel().equals(sLabel)) {
 					ss = (SwitchStmt) s;
 				}
 			}
-			while (!line.equals(".end sparse-switch") && !line.equals(".end packed-switch")) {
+			while (!line.equals(".end sparse-switch") && !line.equals(".end packed-switch")  && index < oldLines.size()) {
 				line = oldLines.get(index++);
 				classSmali += line + "\n";
 				m.setSmaliCode(m.getSmaliCode() + line + "\n");
@@ -341,7 +404,7 @@ public class Parser {
 		}
 		// 1.5 - '.annotation'
 		else if (line.startsWith(".annotation")) {
-			while (!line.equals(".end annotation")) {
+			while (!line.equals(".end annotation")  && index < oldLines.size()) {
 				line = oldLines.get(index++);
 				classSmali += line + "\n";
 				m.setSmaliCode(m.getSmaliCode() + line + "\n");
@@ -367,7 +430,7 @@ public class Parser {
 		}
 		else if (line.startsWith(".annotation ")) {
 			if (line.equals(".annotation system Ldalvik/annotation/MemberClasses;")) {
-				while (!line.equals(".end annotation")) {
+				while (!line.equals(".end annotation")  && index < oldLines.size()) {
 					line = oldLines.get(index++);
 					classSmali += line + "\n";
 					if (line.startsWith("        ")) {
@@ -379,35 +442,31 @@ public class Parser {
 				}
 			}
 			else if (line.equals(".annotation system Ldalvik/annotation/EnclosingMethod;")) {
-				while (!line.equals(".end annotation")) {
+				while (!line.equals(".end annotation")  && index < oldLines.size()) {
 					line = oldLines.get(index++);
 					classSmali += line + "\n";
 					if (line.startsWith("    value = ")) {
 						String mSig = line.substring(line.lastIndexOf(" = ")+3);
 						String dexC = mSig.split("->")[0];
 						StaticClass outerC = staticApp.findClassByDexName(dexC);
-						if (outerC == null) {
-							outerC = new StaticClass();
-							outerC.setJavaName(Grammar.dexToJavaTypeName(dexC));
+						if (outerC != null) {
+							outerC.addInnerClass(c.getJavaName());
+							c.setOuterClass(outerC.getJavaName());
 						}
-						outerC.addInnerClass(c.getJavaName());
-						c.setOuterClass(outerC.getJavaName());
 					}
 				}
 			}
 			else if (line.equals(".annotation system Ldalvik/annotation/EnclosingClass;")) {
-				while (!line.equals(".end annotation")) {
+				while (!line.equals(".end annotation")  && index < oldLines.size()) {
 					line = oldLines.get(index++);
 					classSmali += line + "\n";
 					if (line.startsWith("    value = ")) {
 						String dexC = line.substring(line.lastIndexOf(" = ")+3);
 						StaticClass outerC = staticApp.findClassByDexName(dexC);
-						if (outerC == null) {
-							outerC = new StaticClass();
-							outerC.setJavaName(Grammar.dexToJavaTypeName(dexC));
+						if (outerC != null) {
+							outerC.addInnerClass(c.getJavaName());
+							c.setOuterClass(outerC.getJavaName());
 						}
-						outerC.addInnerClass(c.getJavaName());
-						c.setOuterClass(outerC.getJavaName());
 					}
 				}
 			}
@@ -430,6 +489,7 @@ public class Parser {
 				f = new StaticField();
 				f.setDexSubSig(subSig);
 			}
+			f.setDeclaringClassName(c.getDexName());
 			if (line.contains(" public "))		f.setPublic(true);
 			if (line.contains(" private "))		f.setPrivate(true);
 			if (line.contains(" protected "))	f.setProtected(true);
@@ -437,6 +497,7 @@ public class Parser {
 			if (line.contains(" static "))	 	f.setStatic(true);
 			f.setInitValue(initValue);
 			f.setType(Grammar.dexToJavaTypeName(dexType));
+			c.addField(f);
 		}
 	}
 	

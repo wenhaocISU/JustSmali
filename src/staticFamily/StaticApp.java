@@ -58,6 +58,20 @@ public class StaticApp implements Serializable{
 		if (!sig.contains("->"))
 			return null;
 		String cN = sig.split("->")[0];
-		return findClassByDexName(cN).getMethod(sig);
+		StaticClass c = findClassByDexName(cN);
+		if (c == null)
+			return null;
+		return c.getMethod(sig);
+	}
+	
+	public StaticField findField(String sig) {
+		if (!sig.contains("->"))
+			return null;
+		String cN = sig.split("->")[0];
+		String fN = sig.split("->")[1].split(":")[0];
+		StaticClass c = findClassByDexName(cN);
+		if (c == null)
+			return null;
+		return c.getField(fN);
 	}
 }

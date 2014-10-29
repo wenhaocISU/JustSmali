@@ -8,6 +8,8 @@ public class FieldStmt extends StaticStmt {
 	private String fieldSig;
 	private boolean isGet = false;
 	private boolean isPut = false;
+	private boolean isStatic = false;
+	
 
 	public String getFieldSig() {
 		return fieldSig;
@@ -17,6 +19,20 @@ public class FieldStmt extends StaticStmt {
 		this.fieldSig = fieldSig;
 	}
 
+	public String getSrcV() {
+		return getvA();
+	}
+	
+	public String getDestV() {
+		return getvA();
+	}
+	
+	public String getObject() {
+		if (!isStatic)
+			return getvB();
+		return "";
+	}
+	
 	public boolean isGet() {
 		return isGet;
 	}
@@ -31,6 +47,14 @@ public class FieldStmt extends StaticStmt {
 
 	public void setIsPut(boolean isPut) {
 		this.isPut = isPut;
+	}
+
+	public boolean isStatic() {
+		return isStatic;
+	}
+
+	public void setStatic(boolean isStatic) {
+		this.isStatic = isStatic;
 	}
 	
 }
