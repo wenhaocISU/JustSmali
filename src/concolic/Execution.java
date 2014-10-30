@@ -1,4 +1,4 @@
-package analysis;
+package concolic;
 
 import java.util.ArrayList;
 
@@ -10,7 +10,7 @@ import tools.Adb;
 import tools.Jdb;
 import tools.JdbListener;
 
-public class ConcolicExecution {
+public class Execution {
 
 	private StaticApp staticApp;
 	private String pkgName;
@@ -20,7 +20,7 @@ public class ConcolicExecution {
 	private Jdb jdb;
 	private JdbListener jdbListener;
 	
-	public ConcolicExecution(StaticApp staticApp) {
+	public Execution(StaticApp staticApp) {
 		this.staticApp = staticApp;
 		this.pkgName = staticApp.getPackageName();
 		this.adb = new Adb();
