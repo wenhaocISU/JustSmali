@@ -45,6 +45,7 @@ public class Adb {
 	
 	public void stopApp(String packageName) {
 		try {
+			Runtime.getRuntime().exec(Paths.adbPath + " root").waitFor();
 			Runtime.getRuntime().exec(Paths.adbPath + " shell kill " + getPID(packageName)).waitFor();
 		}	catch (Exception e) {e.printStackTrace();}
 	}
