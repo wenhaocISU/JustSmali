@@ -32,15 +32,30 @@ public class ConcolicExecution {
 	}
 	
 	public void doIt() {
-		System.out.println(staticApp.getPackageName());
+		preparation();
+		
+	}
+	
+	private void FirstIteration() {
+		adb.click(seq.get(seq.size()-1));
+	}
+	
+	private void preparation() {
 		adb.startApp(staticApp.getPackageName(), staticApp.getMainActivity().getJavaName());
 		jdb.init(staticApp.getPackageName());
 		jdbListener = new JdbListener(jdb.getProcess().getInputStream());
+		
+		for (int i = 0, len = seq.size()-1; i < len; i++) {
+			adb.click(seq.get(i));
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {e.printStackTrace();}
+		}
+		
 		for (int i : targetM.getSourceLineNumbers())
 			jdb.setBreakPointAtLine(targetM.getDeclaringClass(staticApp).getJavaName(), i);
 		Thread t = new Thread(jdbListener);
 		t.start();
 	}
-	
 
 }
