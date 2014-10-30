@@ -10,15 +10,13 @@ public class Adb {
 	
 	public void click(int x, int y) {
 		try {
-			Process pc = Runtime.getRuntime().exec(Paths.adbPath + " shell input tap " + x + " " + y);
-			pc.waitFor();
+			Runtime.getRuntime().exec(Paths.adbPath + " shell input tap " + x + " " + y).waitFor();
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 	
 	public void click(String xy) {
 		try {
-			Process pc = Runtime.getRuntime().exec(Paths.adbPath + " shell input tap " + xy);
-			pc.waitFor();
+			Runtime.getRuntime().exec(Paths.adbPath + " shell input tap " + xy).waitFor();
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 	
@@ -41,8 +39,13 @@ public class Adb {
 		
 	public void startApp(String packageName, String mainActName) {
 		try {
-			Process pc = Runtime.getRuntime().exec(Paths.adbPath + " shell am start -n " + packageName + "/" + mainActName);
-			pc.waitFor();
+			Runtime.getRuntime().exec(Paths.adbPath + " shell am start -n " + packageName + "/" + mainActName).waitFor();
+		}	catch (Exception e) {e.printStackTrace();}
+	}
+	
+	public void stopApp(String packageName) {
+		try {
+			Runtime.getRuntime().exec(Paths.adbPath + " shell kill " + getPID(packageName)).waitFor();
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 	

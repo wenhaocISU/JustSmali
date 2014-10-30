@@ -1,5 +1,7 @@
 package tools;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 
 import main.Paths;
@@ -12,10 +14,13 @@ public class Jdb {
 	private OutputStream out;
 	
 	public void init(String packageName) {
+		String osName = System.getProperty("os.name");
 		String pID = new Adb().getPID(packageName);
 		try {
 			Runtime.getRuntime().exec(Paths.adbPath + " forward tcp:" + localPort + " jdwp:" + pID).waitFor();
-			pc = Runtime.getRuntime().exec("jdb -sourcepath src -attach localhost:" + localPort);
+			if (osName.startsWith("Windows"))
+				pc = Runtime.getRuntime().exec("jdb -sourcepath " + srcPath + "-connect com.sun.jdi.SocketAttach:hostname=localhost,port=" + localPort);
+			else pc = Runtime.getRuntime().exec("jdb -sourcepath " + srcPath + " -attach localhost:" + localPort);
 			out = pc.getOutputStream();
 		} catch (Exception e) { e.printStackTrace(); }
 	}
@@ -69,4 +74,17 @@ public class Jdb {
 		this.srcPath = srcPath;
 	}
 	
+	private void forTest() {
+		try {
+		String line, line2;
+		BufferedReader in = new BufferedReader(new InputStreamReader(pc.getInputStream()));
+		BufferedReader in_err = new BufferedReader(new InputStreamReader(pc.getErrorStream()));
+		while (true) {
+			if ((line = in.readLine())!=null) 
+				System.out.println(line);
+			if ((line2 = in_err.readLine())!=null)
+				System.out.println(line2);
+		}
+		}	catch (Exception e) {e.printStackTrace();}
+	}
 }
