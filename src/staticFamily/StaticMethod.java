@@ -205,4 +205,11 @@ public class StaticMethod  implements Serializable{
 		this.returnLineNumber = returnLineNumber;
 	}
 
+	public StaticStmt getStmtByLineNumber(int line) {
+		for (StaticStmt s : smaliStmts)
+			if (s.getSourceLineNumber() == line)
+				return s;
+		return null;
+	} 
+	
 }

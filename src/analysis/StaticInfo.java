@@ -3,17 +3,19 @@ package analysis;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import javax.xml.parsers.DocumentBuilderFactory;
+
+import main.Paths;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import main.Paths;
 import smali.Parser;
 import staticFamily.StaticApp;
 import staticFamily.StaticClass;
@@ -105,7 +107,7 @@ public class StaticInfo {
 	}
 	
 	private static void saveInfoFile() {
-		System.out.println("\nSaving StaticApp into file...");
+		System.out.print("\nSaving StaticApp into file...  ");
 		File infoFile = new File(staticApp.outPath + "/static.info");
 		if (infoFile.exists())
 			infoFile.delete();
@@ -113,17 +115,31 @@ public class StaticInfo {
 			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(infoFile));
 			out.writeObject(staticApp);
 			out.close();
+			System.out.print("Done.\n\n");
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 
 	private static void loadInfoFile() {
-		System.out.println("\nLoading StaticApp...");
+		System.out.print("\nLoading StaticApp...  ");
 		File infoFile = new File(staticApp.outPath + "/static.info");
-		try {
-			ObjectInputStream in = new ObjectInputStream(new FileInputStream(infoFile));
-			staticApp = (StaticApp) in.readObject();
-			in.close();
-		}	catch (Exception e) {e.printStackTrace();}
+			ObjectInputStream in = null;
+			try {
+				in = new ObjectInputStream(new FileInputStream(infoFile));
+				staticApp = (StaticApp) in.readObject();
+				in.close();
+				System.out.print("Done.\n\n");
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				if (e.getMessage().contains("local class incompatible")) {
+					System.out.println("\nLocal class incompatible... rebuilding StaticApp...");
+					Apktool.extractAPK(staticApp);
+					Parser.parseSmali(staticApp);
+					parseManifest();
+					saveInfoFile();
+				}
+				else e.printStackTrace();
+			}
 	}
 
 	private static boolean infoFileExists() {

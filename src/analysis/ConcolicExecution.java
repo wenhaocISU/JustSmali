@@ -3,7 +3,9 @@ package analysis;
 import java.util.ArrayList;
 
 import staticFamily.StaticApp;
+import staticFamily.StaticClass;
 import staticFamily.StaticMethod;
+import staticFamily.StaticStmt;
 import tools.Adb;
 import tools.Jdb;
 import tools.JdbListener;
@@ -36,11 +38,33 @@ public class ConcolicExecution {
 	public void doIt() {
 		try {
 			preparation();
+			FirstIteration();
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 	
-	private void FirstIteration() {
+	private void FirstIteration() throws Exception{
 		adb.click(seq.get(seq.size()-1));
+		Thread.sleep(100);
+		int newHitLine = -1;
+		while (newHitLine != targetM.getReturnLineNumber()) {
+			String newestHit = jdbListener.getNewestHit();
+			jdb.cont();
+			String methodInfo = newestHit.split(", ")[1];
+			String cN = methodInfo.substring(0, methodInfo.lastIndexOf("."));
+			String mN = methodInfo.substring(methodInfo.lastIndexOf(".")+1).replace("(", "").replace(")", "");
+			String lineInfo = newestHit.split(", ")[2];
+			newHitLine = Integer.parseInt(lineInfo.substring(lineInfo.indexOf("=")+1, lineInfo.indexOf(" ")));
+			StaticClass c = staticApp.findClassByJavaName(cN);
+			if (c == null)	continue;
+			StaticMethod m = c.getMethod(mN, newHitLine);
+			if (m == null)	continue;
+			StaticStmt s = m.getStmtByLineNumber(newHitLine);
+			if (s == null)	continue;
+			
+			Thread.sleep(100);
+			System.out.println("[hit] " + cN + "->" + mN + ":" + newHitLine + " '" + s.getTheStmt() + "'");
+		}
+		
 	}
 	
 	private void preparation() throws Exception{

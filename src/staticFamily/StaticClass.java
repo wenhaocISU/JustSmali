@@ -167,4 +167,11 @@ public class StaticClass  implements Serializable{
 		return null;
 	}
 	
+	public StaticMethod getMethod(String mName, int lineNo) {
+		for (StaticMethod m : methods)
+			if (m.getName().equals(mName) && m.getSourceLineNumbers().contains(lineNo))
+				return m;
+		return null;
+	}
+	
 }

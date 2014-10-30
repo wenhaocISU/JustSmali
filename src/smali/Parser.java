@@ -74,8 +74,10 @@ public class Parser {
 	}
 
 	private static void parseFiles() {
+		int counter = 1, total = staticApp.getClasses().size();
 		for (StaticClass c : staticApp.getClasses()) {
 			File f = new File(staticApp.outPath + "/apktool/smali/" + c.getJavaName().replace(".", "/") + ".smali");
+			System.out.println("(" + counter++ + "/" + total + ") " + c.getJavaName() + " ...");
 			c = parseSmaliCode(f, c);
 		}
 	}
