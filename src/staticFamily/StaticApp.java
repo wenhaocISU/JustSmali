@@ -74,4 +74,19 @@ public class StaticApp implements Serializable{
 			return null;
 		return c.getField(fN);
 	}
+	
+	public StaticClass getMainActivity() {
+		for (StaticClass c : classes)
+			if (c.isMainActivity())
+				return c;
+		return null;
+	}
+	
+	public ArrayList<StaticClass> getActivities() {
+		ArrayList<StaticClass> result = new ArrayList<StaticClass>();
+		for (StaticClass c : classes)
+			if (c.isActivity())
+				result.add(c);
+		return result;
+	}
 }

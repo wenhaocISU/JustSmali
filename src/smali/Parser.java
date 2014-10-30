@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -114,6 +115,7 @@ public class Parser {
 				int originalLineNumber = -1, stmtID = 0;
 				final StaticMethod m = initMethod(line, c);
 				label = new BlockLabel();
+				label.setNormalLabels(new ArrayList<String>(Arrays.asList(":main")));
 				normalLabelAlreadyUsed = false;
 				m.setSmaliCode(line+ "\n");
 				while (!line.equals(".end method")  && index < oldLines.size()) {
@@ -147,12 +149,25 @@ public class Parser {
 							String left = classSmali.substring(0, classSmali.lastIndexOf("\n\n")+2);
 							String right = classSmali.substring(classSmali.lastIndexOf("\n\n")+2);
 							classSmali = left + "    .line " + s.getSourceLineNumber() + "\n" + right;
+							String methodSmali = m.getSmaliCode();
+							left = methodSmali.substring(0, methodSmali.lastIndexOf("\n\n")+2);
+							right = methodSmali.substring(methodSmali.lastIndexOf("\n\n")+2);
+							methodSmali = left + "    .line " + s.getSourceLineNumber() + "\n" + right;
+							m.setSmaliCode(methodSmali);
 						}
 						else {
 							s.setOriginalLineNumber(originalLineNumber);
 							originalLineNumber = -1;
 						}
 						m.addSourceLineNumber(s.getSourceLineNumber());
+						if (s instanceof IfStmt)
+							label.setNormalLabelSection(label.getNormalLabelSection()+1);
+						else if (s instanceof ReturnStmt) {
+							label = new BlockLabel();
+							m.setReturnLineNumber(s.getSourceLineNumber());
+						}
+						else if (s instanceof GotoStmt || s instanceof SwitchStmt || s instanceof ThrowStmt)
+							label = new BlockLabel();
 						m.addSmaliStmt(s);
 					}
 				}

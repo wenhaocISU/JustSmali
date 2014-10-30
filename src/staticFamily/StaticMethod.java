@@ -46,8 +46,8 @@ public class StaticMethod  implements Serializable{
 		this.smaliSignature = smaliSignature;
 	}
 	
-	public String getDeclaringClass() {
-		return declaringClass;
+	public StaticClass getDeclaringClass(StaticApp testApp) {
+		return testApp.findClassByDexName(declaringClass);
 	}
 	
 	public void setDeclaringClass(String declaringClass) {
@@ -115,9 +115,6 @@ public class StaticMethod  implements Serializable{
 		this.sourceLineNumbers = sourceLineNumbers;
 	}
 
-	public int getReturnLineNumber() {
-		return returnLineNumber;
-	}
 
 	public void addSourceLineNumber(int srcLineNumber) {
 		if (!this.sourceLineNumbers.contains(srcLineNumber))
@@ -198,6 +195,14 @@ public class StaticMethod  implements Serializable{
 	public void setLocalVariableCount(int localVariableCount) {
 		this.localVariableCount = localVariableCount;
 
+	}
+
+	public int getReturnLineNumber() {
+		return returnLineNumber;
+	}
+
+	public void setReturnLineNumber(int returnLineNumber) {
+		this.returnLineNumber = returnLineNumber;
 	}
 
 }
