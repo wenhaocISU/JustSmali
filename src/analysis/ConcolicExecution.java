@@ -34,15 +34,16 @@ public class ConcolicExecution {
 	}
 	
 	public void doIt() {
-		preparation();
-		
+		try {
+			preparation();
+		}	catch (Exception e) {e.printStackTrace();}
 	}
 	
 	private void FirstIteration() {
 		adb.click(seq.get(seq.size()-1));
 	}
 	
-	private void preparation() {
+	private void preparation() throws Exception{
 		
 		adb.stopApp(pkgName);
 		adb.startApp(pkgName, staticApp.getMainActivity().getJavaName());
@@ -51,9 +52,7 @@ public class ConcolicExecution {
 		
 		for (int i = 0, len = seq.size()-1; i < len; i++) {
 			adb.click(seq.get(i));
-			try {
-				Thread.sleep(300);
-			} catch (InterruptedException e) {e.printStackTrace();}
+			Thread.sleep(300);
 		}
 		
 		for (int i : targetM.getSourceLineNumbers())
