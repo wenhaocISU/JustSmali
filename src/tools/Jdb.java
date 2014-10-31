@@ -22,6 +22,7 @@ public class Jdb {
 				pc = Runtime.getRuntime().exec("jdb -sourcepath " + srcPath + "-connect com.sun.jdi.SocketAttach:hostname=localhost,port=" + localPort);
 			else pc = Runtime.getRuntime().exec("jdb -sourcepath " + srcPath + " -attach localhost:" + localPort);
 			out = pc.getOutputStream();
+			//forTest();
 		} catch (Exception e) { e.printStackTrace(); }
 	}
 	

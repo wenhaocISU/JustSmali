@@ -8,13 +8,15 @@ import java.util.ArrayList;
 public class JdbListener implements Runnable{
 
 	private InputStream stream;
-	public static boolean stopThread;
+	private boolean stop;
 	private ArrayList<String> hits = new ArrayList<String>();
 	private String newestHit;
+	private boolean bpMode;
+	private boolean localMode;
 	
 	public JdbListener(InputStream stream) {
 		this.stream = stream;
-		stopThread = false;
+		stop = false;
 	}
 	
 	@Override
@@ -22,15 +24,18 @@ public class JdbListener implements Runnable{
 		try {
 			BufferedReader in = new BufferedReader(new InputStreamReader(stream));
 			String line;
-			while ((line = in.readLine())!=null) {
-				if (stopThread)	return;
+			while (true) {
+				if (stop)	break;
+				if ((line = in.readLine())==null)
+					continue;
 				if (line.startsWith("Breakpoint hit: ")) {
 					hits.add(line);
 					newestHit = line;
 				}
-				//System.out.println(" [J] " + line);
+//				System.out.println(" [J] " + line);
 			}
 			in.close();
+			System.out.println("\nlistener exiting...");
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 	
@@ -40,6 +45,26 @@ public class JdbListener implements Runnable{
 	
 	public String getNewestHit() {
 		return newestHit;
-}
+	}
+
+	public boolean isBpMode() {
+		return bpMode;
+	}
+
+	public void setBpMode(boolean bpMode) {
+		this.bpMode = bpMode;
+	}
+
+	public boolean isLocalMode() {
+		return localMode;
+	}
+
+	public void setLocalMode(boolean localMode) {
+		this.localMode = localMode;
+	}
+	
+	public void stopListening() {
+		this.stop = true;
+	}
 
 }

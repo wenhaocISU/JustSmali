@@ -50,6 +50,9 @@ public class Execution {
 		while (newHitLine != targetM.getReturnLineNumber()) {
 			String newestHit = jdbListener.getNewestHit();
 			jdb.cont();
+			Thread.sleep(100);
+			if (!newestHit.contains(", "))
+				continue;
 			String methodInfo = newestHit.split(", ")[1];
 			String cN = methodInfo.substring(0, methodInfo.lastIndexOf("."));
 			String mN = methodInfo.substring(methodInfo.lastIndexOf(".")+1).replace("(", "").replace(")", "");
@@ -62,9 +65,10 @@ public class Execution {
 			StaticStmt s = m.getStmtByLineNumber(newHitLine);
 			if (s == null)	continue;
 			p1.addExecutionLog(m.getSmaliSignature() + ":" + newHitLine);
-			Thread.sleep(100);
 			System.out.println("[hit] " + cN + "->" + mN + ":" + newHitLine + " '" + s.getTheStmt() + "'  ");
 		}
+		jdbListener.stopListening();
+		System.out.println("\n trying to stop jdbListener..");
 	}
 	
 	private void preparation() throws Exception{
@@ -82,8 +86,9 @@ public class Execution {
 			Thread.sleep(300);
 		}
 		
-		for (int i : targetM.getSourceLineNumbers())
+		for (int i : targetM.getSourceLineNumbers()) {
 			jdb.setBreakPointAtLine(targetM.getDeclaringClass(staticApp).getJavaName(), i);
+		}
 		
 		Thread t = new Thread(jdbListener);
 		t.start();
