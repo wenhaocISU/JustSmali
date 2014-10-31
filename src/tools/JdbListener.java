@@ -28,6 +28,7 @@ public class JdbListener implements Runnable{
 				if (stop)	break;
 				if ((line = in.readLine())==null)
 					continue;
+				System.out.println(line);
 				if (line.startsWith("Breakpoint hit: ")) {
 					hits.add(line);
 					newestHit = line;
