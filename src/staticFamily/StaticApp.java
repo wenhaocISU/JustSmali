@@ -10,6 +10,7 @@ public class StaticApp implements Serializable{
 
 	private File apkFile;
 	public String outPath;
+	public String signedAppPath;
 	private String packageName;
 	private List<StaticClass> classes = new ArrayList<StaticClass>();	
 	
@@ -40,6 +41,7 @@ public class StaticApp implements Serializable{
 	}
 	
 	// Utilities
+	
 	public StaticClass findClassByJavaName(String cN) {
 		for (StaticClass c : classes)
 			if (c.getJavaName().equals(cN))

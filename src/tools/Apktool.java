@@ -2,7 +2,11 @@ package tools;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.util.ArrayList;
 
 import main.Paths;
 import staticFamily.StaticApp;
@@ -26,6 +30,54 @@ public class Apktool {
 			in_err.close();
 			System.out.println("-- apktool finished extracting App '" + app.getAbsolutePath() + "'\n");
 		} catch (Exception e) {	e.printStackTrace();}
+	}
+	
+	public static void recompileAPK(StaticApp testApp) {
+		try {
+			System.out.print("\nRecompiling smali into APK...  ");
+			String outAppName = testApp.getApkFile().getName();
+			outAppName = outAppName.substring(0, outAppName.lastIndexOf(".apk"));
+			outAppName = outAppName + "_smali_unsigned.apk";
+			Process pc = Runtime.getRuntime().exec(
+					"java -jar " + Paths.apktoolPath + " b -f "
+					+ "-a " + Paths.aaptPath
+					+ " " + testApp.outPath + "/apktool/"
+					+ " " + testApp.outPath + "/" + outAppName);
+			String line;
+			boolean inputStreamGood = false;
+			BufferedReader in_err = new BufferedReader(new InputStreamReader(pc.getErrorStream()));
+			ArrayList<String> missingNames = new ArrayList<String>();
+			while ((line = in_err.readLine())!=null) {
+				if (line.contains("Building apk file...")) {
+					inputStreamGood = true;
+					System.out.print("Done.\n");
+				}
+				if (line.contains("Error retrieving parent for item: No resource found that matches the given name")) {
+					String missingName = line.substring(line.indexOf("'")+1, line.lastIndexOf("'"));
+					if (!missingNames.contains(missingName))
+						missingNames.add(missingName);
+				}
+			}
+			if (!inputStreamGood && missingNames.size() > 0) {
+				System.out.print("Need to fix the styles.xml and redo..\n");
+				String toWrite = "";
+				BufferedReader inF = new BufferedReader(new FileReader(testApp.outPath + "/apktool/res/values/styles.xml"));
+				while ((line = inF.readLine())!=null) {
+					toWrite += line + "\n";
+					if (line.equals("<resources>")) {
+						for (String missingName : missingNames) {
+							System.out.println("  adding    <style name=\"" + missingName + "\"/>");
+							toWrite += "    <style name=\"" + missingName + "\"/>\n";
+						}
+					}
+				}
+				inF.close();
+				PrintWriter outF = new PrintWriter(new FileWriter(testApp.outPath + "/apktool/res/values/styles.xml"));
+				outF.write(toWrite);
+				outF.close();
+				recompileAPK(testApp);
+			}
+		}	catch (Exception e) {e.printStackTrace();}
 	}
 	
 }

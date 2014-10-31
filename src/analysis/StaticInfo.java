@@ -20,6 +20,7 @@ import smali.Parser;
 import staticFamily.StaticApp;
 import staticFamily.StaticClass;
 import tools.Apktool;
+import tools.Others;
 
 public class StaticInfo {
 
@@ -44,6 +45,15 @@ public class StaticInfo {
 			loadInfoFile();
 		}
 		
+		File instrumentedAPK = new File(staticApp.outPath + "/" + 
+					apkFile.getName().substring(0, apkFile.getName().lastIndexOf(".apk"))
+					+ "_smali.apk");
+		if (!instrumentedAPK.exists()) {
+			Apktool.recompileAPK(staticApp);
+			Others.signAPK(staticApp);
+		}
+		
+		System.out.println("\nAnalysis Initialization Complete.\n");
 		return staticApp;
 	}
 
@@ -115,7 +125,7 @@ public class StaticInfo {
 			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(infoFile));
 			out.writeObject(staticApp);
 			out.close();
-			System.out.print("Done.\n\n");
+			System.out.print("Done.\n");
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 
@@ -127,7 +137,7 @@ public class StaticInfo {
 				in = new ObjectInputStream(new FileInputStream(infoFile));
 				staticApp = (StaticApp) in.readObject();
 				in.close();
-				System.out.print("Done.\n\n");
+				System.out.print("Done.\n");
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
 			} catch (IOException e) {

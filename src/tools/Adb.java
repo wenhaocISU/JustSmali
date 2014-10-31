@@ -50,4 +50,16 @@ public class Adb {
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 	
+	public void installApp(String appPath) {
+		try {
+			Runtime.getRuntime().exec(Paths.adbPath + " install " + appPath).waitFor();
+		}	catch (Exception e) {e.printStackTrace();}
+	}
+	
+	
+	public void uninstallApp(String pkgName) {
+		try {
+			Runtime.getRuntime().exec(Paths.adbPath + " uninstall " + pkgName).waitFor();
+		}	catch (Exception e) {e.printStackTrace();}
+	}
 }
