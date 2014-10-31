@@ -65,14 +65,16 @@ public class Execution {
 			Thread.sleep(100);
 			System.out.println("[hit] " + cN + "->" + mN + ":" + newHitLine + " '" + s.getTheStmt() + "'  ");
 		}
-		
 	}
 	
 	private void preparation() throws Exception{
 		
-		adb.stopApp(pkgName);
+		adb.uninstallApp(staticApp.getPackageName());
+		adb.installApp(staticApp.getSignedAppPath());
 		adb.startApp(pkgName, staticApp.getMainActivity().getJavaName());
+		
 		jdb.init(pkgName);
+		
 		jdbListener = new JdbListener(jdb.getProcess().getInputStream());
 		
 		for (int i = 0, len = seq.size()-1; i < len; i++) {

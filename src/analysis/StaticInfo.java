@@ -33,9 +33,7 @@ public class StaticInfo {
 		staticApp.setApkFile(apkFile);
 		staticApp.outPath = Paths.appDataDir + staticApp.getApkFile().getName();
 		
-		
 		if (forceAllSteps || !infoFileExists()) {
-			
 			Apktool.extractAPK(staticApp);
 			Parser.parseSmali(staticApp);
 			parseManifest();
@@ -52,6 +50,7 @@ public class StaticInfo {
 			Apktool.recompileAPK(staticApp);
 			Others.signAPK(staticApp);
 		}
+		staticApp.setSignedAppPath(instrumentedAPK.getAbsolutePath());
 		
 		System.out.println("\nAnalysis Initialization Complete.\n");
 		return staticApp;
@@ -142,7 +141,7 @@ public class StaticInfo {
 				e.printStackTrace();
 			} catch (IOException e) {
 				if (e.getMessage().contains("local class incompatible")) {
-					System.out.println("\nLocal class incompatible... rebuilding StaticApp...");
+					System.out.print("Class version incompatible... rebuilding StaticApp...\n");
 					Apktool.extractAPK(staticApp);
 					Parser.parseSmali(staticApp);
 					parseManifest();

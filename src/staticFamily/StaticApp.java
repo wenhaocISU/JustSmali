@@ -10,7 +10,7 @@ public class StaticApp implements Serializable{
 
 	private File apkFile;
 	public String outPath;
-	public String signedAppPath;
+	private String signedAppPath;
 	private String packageName;
 	private List<StaticClass> classes = new ArrayList<StaticClass>();	
 	
@@ -90,5 +90,13 @@ public class StaticApp implements Serializable{
 			if (c.isActivity())
 				result.add(c);
 		return result;
+	}
+
+	public String getSignedAppPath() {
+		return signedAppPath;
+	}
+
+	public void setSignedAppPath(String signedAppPath) {
+		this.signedAppPath = signedAppPath;
 	}
 }
