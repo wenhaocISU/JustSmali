@@ -43,7 +43,6 @@ public class Execution {
 	}
 	
 	private void FirstIteration() throws Exception{
-		PathSummary p1 = new PathSummary();
 		adb.click(seq.get(seq.size()-1));
 		Thread.sleep(100);
 		int newHitLine = -1;
@@ -64,7 +63,6 @@ public class Execution {
 			if (m == null)	continue;
 			StaticStmt s = m.getStmtByLineNumber(newHitLine);
 			if (s == null)	continue;
-			p1.addExecutionLog(m.getSmaliSignature() + ":" + newHitLine);
 			System.out.println("[hit] " + cN + "->" + mN + ":" + newHitLine + " '" + s.getTheStmt() + "'  ");
 		}
 		jdbListener.stopListening();

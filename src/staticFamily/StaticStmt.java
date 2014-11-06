@@ -2,6 +2,7 @@ package staticFamily;
 
 import java.io.Serializable;
 
+import concolic.Operation;
 import smali.BlockLabel;
 
 @SuppressWarnings("serial")
@@ -22,6 +23,11 @@ public class StaticStmt implements Serializable{
 	private String finallyTgtLabel = "";
 	
 	private boolean flowsThrough = true;
+	
+	private boolean generatesSymbol;
+	private boolean hasOperation;
+	
+	private Operation operation = new Operation();
 	
 	
 	private BlockLabel blockLabel = new BlockLabel();
@@ -145,6 +151,30 @@ public class StaticStmt implements Serializable{
 
 	public void setvC(String vC) {
 		this.vC = vC;
+	}
+
+	public boolean generatesSymbol() {
+		return generatesSymbol;
+	}
+
+	public void setGeneratesSymbol(boolean generatesSymbol) {
+		this.generatesSymbol = generatesSymbol;
+	}
+
+	public boolean hasOperation() {
+		return hasOperation;
+	}
+
+	public void setHasOperation(boolean hasOperation) {
+		this.hasOperation = hasOperation;
+	}
+
+	public Operation getOperation() {
+		return operation;
+	}
+
+	public void setOperation(Operation operation) {
+		this.operation = operation;
 	}
 
 	
