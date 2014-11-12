@@ -368,7 +368,10 @@ public class Parser {
 				o.setOp(op);
 				o.setLeft(s.getvA());
 				if (s.has3rdConstArg()) {
-					
+					// vA = vB + #C
+				}
+				else {
+					// vA = vA + vB
 				}
 			}
 			s.setOperation(o);
