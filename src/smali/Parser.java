@@ -29,6 +29,7 @@ import staticFamily.StaticClass;
 import staticFamily.StaticField;
 import staticFamily.StaticMethod;
 import staticFamily.StaticStmt;
+import concolic.Operation;
 
 public class Parser {
 
@@ -219,6 +220,8 @@ public class Parser {
 			FieldStmt s = new FieldStmt();
 			s.setIsGet(StmtFormat.isGetField(line));
 			s.setIsPut(StmtFormat.isPutField(line));
+			s.setGeneratesSymbol(s.isGet());
+			s.setHasOperation(s.isPut());
 			String arguments[] = line.substring(line.indexOf(" ")+1).split(", ");
 			s.setvA(arguments[0]);
 			s.setvB(arguments[1]);
@@ -288,6 +291,7 @@ public class Parser {
 				StaticStmt lastS = m.getSmaliStmts().get(m.getSmaliStmts().size()-1);
 				if (lastS instanceof InvokeStmt) {
 					((InvokeStmt) lastS).setResultsMoved(true);
+					lastS.setGeneratesSymbol(true);
 				}
 				else if (lastS instanceof NewStmt) {
 					if (((NewStmt) lastS).isNewArray())
@@ -299,6 +303,11 @@ public class Parser {
 				String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
 				s.setvA(arguments[0]);
 				s.setvB(arguments[1]);
+				s.setHasOperation(true);
+				Operation o = new Operation();
+				o.setLeft(s.getDestV());
+				o.setNoOp(true);
+				o.setRightA(s.getSourceV());
 			}
 			return s;
 		}
@@ -337,10 +346,32 @@ public class Parser {
 			String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
 			s.setvA(arguments[0]);
 			s.setvB(arguments[1]);
+			s.setHasOperation(true);
 			if (arguments.length > 2) {
 				s.setHas3rdConstArg(true);
 				s.setvC(arguments[2]);
 			}
+			if (line.startsWith("instance-of") || line.startsWith("array-length"))
+				return s;
+			Operation o = new Operation();
+			if (line.startsWith("int-to-") || line.startsWith("long-to-") ||
+				line.startsWith("float-to-") || line.startsWith("double-to-"))
+			{
+				o.setNoOp(true);
+				o.setLeft(s.getvA());
+				o.setRightA(s.getvB());
+			}
+			else
+			{
+				String op = line.substring(0, line.indexOf(" "));
+				op = op.split("-")[0];
+				o.setOp(op);
+				o.setLeft(s.getvA());
+				if (s.has3rdConstArg()) {
+					
+				}
+			}
+			s.setOperation(o);
 			return s;
 		}
 		if (StmtFormat.isV3OP(line)) {
@@ -349,6 +380,17 @@ public class Parser {
 			s.setvA(arguments[0]);
 			s.setvB(arguments[1]);
 			s.setvC(arguments[2]);
+			s.setHasOperation(true);
+			if (line.startsWith("cmp"))
+				return s;
+			Operation o = new Operation();
+			String op = line.substring(0, line.indexOf(" "));
+			op = op.split("-")[0];
+			o.setOp(op);
+			o.setLeft(s.getvA());
+			o.setRightA(s.getvB());
+			o.setRightB(s.getvC());
+			s.setOperation(o);
 			return s;
 		}
 		StaticStmt s = new StaticStmt();

@@ -7,7 +7,7 @@ public class V2OPStmt extends StaticStmt{
 
 	private boolean has3rdConstArg;
 
-	public boolean isHas3rdConstArg() {
+	public boolean has3rdConstArg() {
 		return has3rdConstArg;
 	}
 

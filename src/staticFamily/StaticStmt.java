@@ -24,9 +24,9 @@ public class StaticStmt implements Serializable{
 	
 	private boolean flowsThrough = true;
 	
-	private boolean generatesSymbol;
-	private boolean hasOperation;
+	private boolean generatesSymbol = false;
 	
+	private boolean hasOperation = false;
 	private Operation operation = new Operation();
 	
 	
@@ -69,7 +69,7 @@ public class StaticStmt implements Serializable{
 		this.newLineNumber = newLineNumber;
 	}
 	
-	public boolean isFlowsThrough() {
+	public boolean flowsThrough() {
 		return flowsThrough;
 	}
 	
