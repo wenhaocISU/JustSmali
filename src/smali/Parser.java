@@ -369,9 +369,13 @@ public class Parser {
 				o.setLeft(s.getvA());
 				if (s.has3rdConstArg()) {
 					// vA = vB + #C
+					o.setRightA(s.getvB());
+					o.setRightB(s.getvC());
 				}
 				else {
 					// vA = vA + vB
+					o.setRightA(s.getvA());
+					o.setRightB(s.getvB());
 				}
 			}
 			s.setOperation(o);
