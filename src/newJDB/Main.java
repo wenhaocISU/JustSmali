@@ -69,6 +69,7 @@ public class Main{
 				break;
 			}
 		}
+		
 		executor.shutdownNow();
 		if (executor.isShutdown())
 			System.out.println("executor down");
