@@ -1,5 +1,7 @@
 package concolic;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import staticFamily.StaticApp;
@@ -8,7 +10,7 @@ import staticFamily.StaticMethod;
 import staticFamily.StaticStmt;
 import tools.Adb;
 import tools.Jdb;
-import tools.JdbListener;
+import tools.oldJdbListener;
 
 public class Execution {
 
@@ -18,7 +20,8 @@ public class Execution {
 	private ArrayList<String> seq = new ArrayList<String>();
 	private Adb adb;
 	private Jdb jdb;
-	private JdbListener jdbListener;
+	private oldJdbListener jdbListener;
+	private BufferedReader in;
 	
 	public Execution(StaticApp staticApp) {
 		this.staticApp = staticApp;
@@ -38,8 +41,23 @@ public class Execution {
 	public void doIt() {
 		try {
 			preparation();
-			FirstIteration();
+			//FirstIteration();
+			newFirstIteration();
 		}	catch (Exception e) {e.printStackTrace();}
+	}
+	
+	private void newFirstIteration() throws Exception {
+		adb.click(seq.get(seq.size()-1));
+		Thread.sleep(100);
+		String newLine = "";
+		while (!newLine.equals("TIMEOUT")) {
+			newLine = jdb.readLine();
+			System.out.println("[J]" + newLine);
+			if (newLine.startsWith("Breakpoint hit: "))
+				jdb.cont();
+			Thread.sleep(100);
+		}
+		System.out.println("Finished");
 	}
 	
 	private void FirstIteration() throws Exception{
@@ -64,6 +82,7 @@ public class Execution {
 			StaticStmt s = m.getStmtByLineNumber(newHitLine);
 			if (s == null)	continue;
 			System.out.println("[hit] " + cN + "->" + mN + ":" + newHitLine + " '" + s.getTheStmt() + "'  ");
+			System.out.println(" *operation: " + s.getOperation().toString());
 		}
 		jdbListener.stopListening();
 		System.out.println("\n trying to stop jdbListener..");
@@ -77,7 +96,9 @@ public class Execution {
 		
 		jdb.init(pkgName);
 		
-		jdbListener = new JdbListener(jdb.getProcess().getInputStream());
+		in = new BufferedReader(new InputStreamReader(jdb.getProcess().getInputStream()));
+		
+		//jdbListener = new JdbListener(jdb.getProcess().getInputStream());
 		
 		for (int i = 0, len = seq.size()-1; i < len; i++) {
 			adb.click(seq.get(i));
@@ -88,8 +109,8 @@ public class Execution {
 			jdb.setBreakPointAtLine(targetM.getDeclaringClass(staticApp).getJavaName(), i);
 		}
 		
-		Thread t = new Thread(jdbListener);
-		t.start();
+		//Thread t = new Thread(jdbListener);
+		//t.start();
 	}
 
 }

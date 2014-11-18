@@ -1,8 +1,15 @@
 package tools;
 
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import main.Paths;
 
@@ -12,6 +19,7 @@ public class Jdb {
 	private String srcPath = "src";
 	private Process pc;
 	private OutputStream out;
+	private BufferedReader in;
 	
 	public void init(String packageName) {
 		String osName = System.getProperty("os.name");
@@ -22,8 +30,26 @@ public class Jdb {
 				pc = Runtime.getRuntime().exec("jdb -sourcepath " + srcPath + "-connect com.sun.jdi.SocketAttach:hostname=localhost,port=" + localPort);
 			else pc = Runtime.getRuntime().exec("jdb -sourcepath " + srcPath + " -attach localhost:" + localPort);
 			out = pc.getOutputStream();
+			in = new BufferedReader(new InputStreamReader(pc.getInputStream()));
 			//forTest();
 		} catch (Exception e) { e.printStackTrace(); }
+	}
+	
+	public String readLine() {
+		String result = "";
+		JDBListener jdbL = new JDBListener(in);
+		ExecutorService executor = Executors.newFixedThreadPool(1);
+		Future<String> newestLine = executor.submit(jdbL);
+		try {
+			result = newestLine.get(500, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+		} catch (TimeoutException e) {
+			System.out.println("///TimeOut");
+			result = "TIMEOUT";
+		}
+		executor.shutdown();
+		return result;
 	}
 	
 	public void setBreakPointAtLine(String className, int line) {

@@ -349,7 +349,7 @@ public class Parser {
 			s.setHasOperation(true);
 			if (arguments.length > 2) {
 				s.setHas3rdConstArg(true);
-				s.setvC(arguments[2]);
+				s.setvC("#" + arguments[2]);
 			}
 			if (line.startsWith("instance-of") || line.startsWith("array-length"))
 				return s;

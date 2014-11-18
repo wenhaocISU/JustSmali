@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
-public class JdbListener implements Runnable{
+public class oldJdbListener implements Runnable{
 
 	private InputStream stream;
 	private boolean stop;
@@ -14,7 +14,7 @@ public class JdbListener implements Runnable{
 	private boolean bpMode;
 	private boolean localMode;
 	
-	public JdbListener(InputStream stream) {
+	public oldJdbListener(InputStream stream) {
 		this.stream = stream;
 		stop = false;
 	}
