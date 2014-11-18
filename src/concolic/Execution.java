@@ -50,11 +50,12 @@ public class Execution {
 		adb.click(seq.get(seq.size()-1));
 		Thread.sleep(100);
 		String newLine = "";
+		
 		while (!newLine.equals("TIMEOUT")) {
-			newLine = jdb.readLine();
 			System.out.println("[J]" + newLine);
 			if (newLine.startsWith("Breakpoint hit: "))
 				jdb.cont();
+			newLine = jdb.readLine();
 			Thread.sleep(100);
 		}
 		System.out.println("Finished");
