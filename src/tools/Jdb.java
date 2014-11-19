@@ -52,6 +52,10 @@ public class Jdb {
 		return result;
 	}
 	
+	public void printOutEveryThing() {
+		new Thread(new oldJdbListener(pc.getInputStream())).start();
+	}
+	
 	public void setBreakPointAtLine(String className, int line) {
 		try {
 			out.write(("stop at " + className + ":" + line + "\n").getBytes());
