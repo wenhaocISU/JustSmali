@@ -4,6 +4,7 @@ package tools;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,11 +42,10 @@ public class Jdb {
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		Future<String> newestLine = executor.submit(jdbL);
 		try {
-			result = newestLine.get(500, TimeUnit.MILLISECONDS);
+			result = newestLine.get(300, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException | ExecutionException e) {
 			e.printStackTrace();
 		} catch (TimeoutException e) {
-			System.out.println("///TimeOut");
 			result = "TIMEOUT";
 		}
 		executor.shutdown();
@@ -68,6 +68,22 @@ public class Jdb {
 			out.write("cont\n".getBytes());
 			out.flush();
 		}	catch (Exception e) {e.printStackTrace();}
+	}
+	
+	public ArrayList<String> getLocals() {
+		ArrayList<String> result = new ArrayList<String>();
+		try {
+			out.write("locals\n".getBytes());
+			out.flush();
+			String line = "";
+			while (!line.equals("TIMEOUT")) {
+				line = readLine();
+				if (line.equals("Local variables:") || line.equals("Method arguments:") || line.equals("TIMEOUT"))
+					continue;
+				result.add(line);
+			}
+		}	catch (Exception e) {e.printStackTrace();}
+		return result;
 	}
 	
 	public void setMonitorCont(boolean flag) {

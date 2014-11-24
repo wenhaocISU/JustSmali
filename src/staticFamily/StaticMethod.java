@@ -2,6 +2,8 @@ package staticFamily;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 @SuppressWarnings("serial")
 public class StaticMethod  implements Serializable{
@@ -27,6 +29,8 @@ public class StaticMethod  implements Serializable{
 	private ArrayList<String> inCallSourceSigs = new ArrayList<String>();
 	private ArrayList<String> outCallTargetSigs = new ArrayList<String>();
 	private ArrayList<String> fieldRefSigs = new ArrayList<String>();
+	
+	private Map<String, String> vDebugInfo = new HashMap<String, String>();
 	
 	// Getters and Setters
 	public String getSmaliSignature() {
@@ -211,5 +215,14 @@ public class StaticMethod  implements Serializable{
 				return s;
 		return null;
 	} 
+	
+	public Map<String, String> getvDebugInfo() {
+		return vDebugInfo;
+	}
+
+	public void addvDebugInfo(String localName, String debugName) {
+		this.vDebugInfo.put(localName, debugName);
+	}
+
 	
 }

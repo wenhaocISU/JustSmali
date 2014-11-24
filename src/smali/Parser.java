@@ -84,6 +84,7 @@ public class Parser {
 	}
 	
 	private static int index = 0;
+	private static int paramIndex = 0;
 	
 	private static StaticClass parseSmaliCode(File f, final StaticClass c) {
 		int largestLineNumber = getLargestLineNumberAndMightAsWellGetOldLines(f);
@@ -116,6 +117,7 @@ public class Parser {
 			classSmali += line + "\n";
 			if (line.startsWith(".method ")) {
 				int originalLineNumber = -1, stmtID = 0;
+				paramIndex = 0;
 				final StaticMethod m = initMethod(line, c);
 				label = new BlockLabel();
 				label.setNormalLabels(new ArrayList<String>(Arrays.asList(":main")));
@@ -161,6 +163,28 @@ public class Parser {
 						else {
 							s.setOriginalLineNumber(originalLineNumber);
 							originalLineNumber = -1;
+						}
+						// check locals
+						if (stmtID > 1) {
+							StaticStmt lastS = m.getSmaliStmts().get(stmtID-2);
+							if (lastS.generatesSymbol() && lastS instanceof FieldStmt) {
+								if (!((FieldStmt)lastS).isStatic()) {
+									String objectV = lastS.getvB();
+									if (!s.getvDebugInfo().containsKey(objectV)) {
+										classSmali = classSmali.substring(0, classSmali.length()-1);
+										String methodSmali = m.getSmaliCode();
+										methodSmali = methodSmali.substring(0, methodSmali.length()-1);
+										classSmali = classSmali.substring(0, classSmali.lastIndexOf("\n")+1);
+										methodSmali = methodSmali.substring(0, methodSmali.lastIndexOf("\n")+1);
+										System.out.println("[lastS] " + lastS.getTheStmt());
+										classSmali += "    .local " + objectV + ", wenhao" + objectV + ":" + ((FieldStmt)lastS).getFieldSig().split("->")[0];
+										methodSmali += "    .local " + objectV + ", wenhao" + objectV + ":" + ((FieldStmt)lastS).getFieldSig().split("->")[0];
+										classSmali += "\n    " + line + "\n";
+										methodSmali += "\n    " + line + "\n";
+										m.setSmaliCode(methodSmali);
+									}
+								}
+							}
 						}
 						m.addSourceLineNumber(s.getSourceLineNumber());
 						if (s instanceof IfStmt)
@@ -214,6 +238,12 @@ public class Parser {
 			String arguments[] = line.substring(line.indexOf(" ")+1).split(", ");
 			s.setvA(arguments[0]);
 			s.setvB(arguments[1]);
+			s.setHasOperation(true);
+			Operation o = new Operation();
+			o.setLeft(s.getV());
+			o.setNoOp(true);
+			o.setRightA("#" + s.getValue());
+			s.setOperation(o);
 			return s;
 		}
 		if (StmtFormat.isGetField(line) || StmtFormat.isPutField(line)) {
@@ -229,6 +259,7 @@ public class Parser {
 			else s.setvC(arguments[2]);
 			String fieldSig = s.getvC();
 			if (s.isStatic())	fieldSig = s.getvB();
+			s.setFieldSig(fieldSig);
 			String tgtCN = fieldSig.split("->")[0];
 			String fSubSig = fieldSig.split("->")[1];
 			StaticClass tgtC = staticApp.findClassByDexName(tgtCN);
@@ -291,7 +322,7 @@ public class Parser {
 				StaticStmt lastS = m.getSmaliStmts().get(m.getSmaliStmts().size()-1);
 				if (lastS instanceof InvokeStmt) {
 					((InvokeStmt) lastS).setResultsMoved(true);
-					lastS.setGeneratesSymbol(true);
+					s.setGeneratesSymbol(true);
 				}
 				else if (lastS instanceof NewStmt) {
 					if (((NewStmt) lastS).isNewArray())
@@ -500,6 +531,8 @@ public class Parser {
 		if (line.contains(" static "))		m.setStatic(true);
 		if (line.contains(" final "))		m.setFinal(true);
 		if (line.contains(" constructor ")) m.setConstructor(true);
+		if (!m.isStatic())
+			paramIndex = 1;
 		return m;
 	}
 	
@@ -543,6 +576,22 @@ public class Parser {
 				m.setSmaliCode(m.getSmaliCode() + line + "\n");
 				if (line.contains(" "))
 					line = line.trim();
+			}
+		}
+		else if (line.startsWith(".local ")) {
+			// .local v0, a:I
+			String names = line.substring(line.indexOf(".local ") + ".local ".length());
+			String localName = names.substring(0, names.indexOf(", "));
+			String debugName = names.substring(names.indexOf(", ")+2, names.indexOf(":"));
+			m.addvDebugInfo(localName, debugName);
+		}
+		else if (line.startsWith(".parameter")) {
+			//.parameter "v"
+			String localName = "p" + paramIndex++;
+			if (line.contains("\"")) {
+				String debugName = line.substring(line.indexOf(".parameter ") + ".parameter ".length());
+				debugName = debugName.replace("\"", "");
+				m.addvDebugInfo(localName, debugName);
 			}
 		}
 	}

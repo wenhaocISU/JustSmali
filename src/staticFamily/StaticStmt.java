@@ -1,9 +1,11 @@
 package staticFamily;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
-import concolic.Operation;
 import smali.BlockLabel;
+import concolic.Operation;
 
 @SuppressWarnings("serial")
 public class StaticStmt implements Serializable{
@@ -24,13 +26,14 @@ public class StaticStmt implements Serializable{
 	
 	private boolean flowsThrough = true;
 	
-	private boolean generatesSymbol = false;
+	private boolean generatesSymbol = false; // iget, sget, invoke&result_moved, 
 	
 	private boolean hasOperation = false;
 	private Operation operation = new Operation();
 	
-	
 	private BlockLabel blockLabel = new BlockLabel();
+		
+	private Map<String, String> vDebugInfo = new HashMap<String, String>();
 	
 	public String getTheStmt() {
 		return theStmt;
@@ -175,6 +178,14 @@ public class StaticStmt implements Serializable{
 
 	public void setOperation(Operation operation) {
 		this.operation = operation;
+	}
+	
+	public Map<String, String> getvDebugInfo() {
+		return vDebugInfo;
+	}
+
+	public void addvDebugInfo(String localName, String debugName) {
+		this.vDebugInfo.put(localName, debugName);
 	}
 
 	

@@ -47,7 +47,6 @@ public class StaticInfo {
 					apkFile.getName().substring(0, apkFile.getName().lastIndexOf(".apk"))
 					+ "_smali.apk");
 		if (forceAllSteps || !instrumentedAPK.exists()) {
-			System.out.println("NO");
 			Apktool.recompileAPK(staticApp);
 			Others.signAPK(staticApp);
 		}

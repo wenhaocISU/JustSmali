@@ -21,32 +21,41 @@ public class SwitchStmt extends StaticStmt{
 	public boolean isPswitch() {
 		return isPswitch;
 	}
+	
 	public void setIsPswitch(boolean isPswitch) {
 		this.isPswitch = isPswitch;
 	}
+	
 	public boolean isSswitch() {
 		return isSswitch;
 	}
+	
 	public void setISSswitch(boolean isSswitch) {
 		this.isSswitch = isSswitch;
 	}
+	
 	public String getSwitchMapLabel() {
 		return switchMapLabel;
 	}
+	
 	public void setSwitchMapLabel(String switchMapLabel) {
 		this.switchMapLabel = switchMapLabel;
 	}
+	
 	public String getpSwitchInitValue() {
 		return pSwitchInitValue;
 	}
+	
 	public void setpSwitchInitValue(String pSwitchInitValue) {
 		this.pSwitchInitValue = pSwitchInitValue;
 	}
+	
 	public Map<String, String> getSwitchMap() {
 		return switchMap;
 	}
+	
 	public void setSwitchMap(Map<String, String> switchMap) {
 		this.switchMap = switchMap;
 	}
-	
+		
 }
