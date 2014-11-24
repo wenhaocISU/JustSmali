@@ -26,7 +26,7 @@ public class Others {
 						" " + f.getAbsolutePath() +
 						" " + keystoreName);
 				OutputStream out = pc.getOutputStream();
-				out.write("isu_obad\n".getBytes());
+				out.write((Paths.keystoreKey + "\n").getBytes());
 				out.flush();
 				pc.waitFor();
 			}	catch (Exception e) { e.printStackTrace(); }

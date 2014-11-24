@@ -37,7 +37,7 @@ public class Main {
 		
 		String apkPath = apps[7];
 		
-		testApp = StaticInfo.initAnalysis(apkPath, false);
+		testApp = StaticInfo.initAnalysis(apkPath, true);
 		
 		Execution cE = new Execution(testApp);
 		

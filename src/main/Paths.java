@@ -14,6 +14,7 @@ public class Paths {
 	public static String androidSDKPath = "/home/wenhaoc/bin/adt-bundle-linux-x86_64-20140702/";
 	public static String appDataDir = "/home/wenhaoc/AppData/";
 	public static String keystorePath = "/home/wenhaoc/bin/keys/wenhaoc.keystore";
+	public static String keystoreKey = "isu_obad";
 	
 	public static String androidToolPath = androidSDKPath+"sdk/tools/";
 	public static String androidPlatformToolPath = androidSDKPath+"sdk/platform-tools/";
