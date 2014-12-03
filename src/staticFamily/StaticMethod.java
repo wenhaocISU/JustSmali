@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import concolic.PathSummary;
+
 @SuppressWarnings("serial")
 public class StaticMethod  implements Serializable{
 
@@ -31,6 +33,8 @@ public class StaticMethod  implements Serializable{
 	private ArrayList<String> fieldRefSigs = new ArrayList<String>();
 	
 	private Map<String, String> vDebugInfo = new HashMap<String, String>();
+	
+	private ArrayList<PathSummary> pathSummaries = new ArrayList<PathSummary>();
 	
 	// Getters and Setters
 	public String getSmaliSignature() {
@@ -224,5 +228,20 @@ public class StaticMethod  implements Serializable{
 		this.vDebugInfo.put(localName, debugName);
 	}
 
+	public int getFirstLineNumberOfBlock(String label) {
+		for (StaticStmt s : smaliStmts) {
+			if (s.getBlockLabel().getNormalLabels().contains(label))
+				return s.getSourceLineNumber();
+		}
+		return -1;
+	}
+
+	public ArrayList<PathSummary> getPathSummaries() {
+		return pathSummaries;
+	}
+
+	public void setPathSummaries(ArrayList<PathSummary> pathSummaries) {
+		this.pathSummaries = pathSummaries;
+	}
 	
 }

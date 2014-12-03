@@ -37,6 +37,17 @@ public class Condition implements Serializable{
 		return left + " " + op + " " + right;
 	}
 	
-
+	public boolean isTrue() {
+		return (this.left.equals("") && this.op.equals("") && this.right.equals(""));
+	}
 	
+	public void reverseCondition() {
+		if (op.equals("="))	op = "!=";
+		else if (op.equals("!="))	op = "=";
+		else if (op.equals("<"))	op = ">=";
+		else if (op.equals("<="))	op = ">";
+		else if (op.equals(">"))	op = "<=";
+		else if (op.equals(">="))	op = "<";
+	}
+
 }

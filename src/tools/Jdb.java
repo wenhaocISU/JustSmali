@@ -49,6 +49,7 @@ public class Jdb {
 			result = "TIMEOUT";
 		}
 		executor.shutdown();
+
 		return result;
 	}
 	

@@ -20,7 +20,6 @@ public class Execution {
 	private ArrayList<String> seq = new ArrayList<String>();
 	private Adb adb;
 	private Jdb jdb;
-
 	
 	public Execution(StaticApp staticApp) {
 		this.staticApp = staticApp;
@@ -51,16 +50,20 @@ public class Execution {
 		String newLine = "";
 		PathSummary pS = new PathSummary();
 		final ArrayList<Operation> symbolicRelations = new ArrayList<Operation>();
+		final ArrayList<Condition> pathCondition = new ArrayList<Condition>();
+		ArrayList<Integer> executionLog = new ArrayList<Integer>();
 		boolean newSymbol = false;
+		boolean newPathCondition = false;
+		int nextPossibleLine = -1;
 		Operation newSymbolO = new Operation();
 		while (!newLine.equals("TIMEOUT")) {
 			if (!newLine.equals(""))
-				System.out.println("[J]" + newLine);
+				System.out.println("\n[J]" + newLine);
 			if (newLine.startsWith("Breakpoint hit: ")) {
 				String subLine = jdb.readLine();
 				while (!subLine.equals("TIMEOUT"))
 					subLine = jdb.readLine();
-				ArrayList<String> jdbLocals = jdb.getLocals();
+				//ArrayList<String> jdbLocals = jdb.getLocals();
 				String methodInfo = newLine.split(", ")[1];
 				String cN = methodInfo.substring(0, methodInfo.lastIndexOf("."));
 				String mN = methodInfo.substring(methodInfo.lastIndexOf(".")+1).replace("(", "").replace(")", "");
@@ -73,43 +76,117 @@ public class Execution {
 				if (m == null)	continue;
 				StaticStmt s = m.getStmtByLineNumber(newHitLine);
 				if (s == null)	continue;
+				executionLog.add(newHitLine);
 				System.out.println("    *bytecode: " + s.getTheStmt());
 				if (newSymbol) {
-					symbolicRelations.add(newSymbolO);
+					newSymbolO = updateConcreteSymbol(newSymbolO);
+					updateSymbolicRelations(symbolicRelations, newSymbolO, true);
 					newSymbol = false;
 					newSymbolO = new Operation();
+				}
+				if (newPathCondition) {
+					if (newHitLine != nextPossibleLine) {
+						Condition lastCond = pathCondition.get(pathCondition.size()-1);
+						lastCond.reverseCondition();
+						pathCondition.set(pathCondition.size()-1, lastCond);
+					}
+					newPathCondition = false;
 				}
 				if (s.hasOperation()) {
 					System.out.println("    *operation: " + s.getOperation().toString());
 					Operation newO = s.getOperation();
-					updateSymbolicRelations(symbolicRelations, newO);
+					updateSymbolicRelations(symbolicRelations, newO, false);
 				}
 				if (s.generatesSymbol()) {
-					System.out.println("    *generates symbol");
+					System.out.print("    *generates symbol:  ");
 					// 2 things: First, add to symbol table; Second, v = $
 					newSymbol = true;
 					newSymbolO = generateNewSymbolOperation(s);
+					System.out.println(newSymbolO.toString());
 				}
 				if (s instanceof IfStmt) {
 					System.out.println("    *condition: " + ((IfStmt)s).getCondition().toString());
-					
+					updatePathCondition(pathCondition, ((IfStmt)s).getCondition(), symbolicRelations);
+					newPathCondition = true;
+					nextPossibleLine = m.getFirstLineNumberOfBlock(((IfStmt) s).getTargetLabel());
 				}
-				
 				System.out.println("    *locals: ");
-				for (String l : jdbLocals)
-					System.out.println("     " + l);
+				ArrayList<String> jdbLocals = jdb.getLocals();
+				for (String lL : jdbLocals) {
+					System.out.println("     " + lL);
+				}
+				System.out.println("Symbolic States:");
+				for (Operation o : symbolicRelations) {
+					System.out.println(" " + o.toString());
+				}
+				System.out.println("Path Condition:");
+				for (Condition cond : pathCondition) {
+					System.out.println(" " + cond.toString());
+				}
 				jdb.cont();
 			}
 			newLine = jdb.readLine();
+			if (newLine == null)
+				System.out.println("Jdb crashed.");
 			Thread.sleep(100);
 		}
 		System.out.println("Finished");
+		System.out.println("Execution Log:");
+		for (int i : executionLog)
+			System.out.print(i + "  ");
+		System.out.print("\n");
+		System.out.println("Symbolic States:");
 		for (Operation o : symbolicRelations) {
 			System.out.println(" " + o.toString());
+		}
+		System.out.println("Path Condition:");
+		for (Condition cond : pathCondition) {
+			System.out.println(" " + cond.toString());
 		}
 	}
 	
 	
+	private Operation updateConcreteSymbol(Operation newSymbolO) {
+		
+		Operation result = newSymbolO;
+		String[] parts = result.getRightA().split(">>");
+		if (parts.length == 3) {
+			ArrayList<String> jdbLocals = jdb.getLocals();
+			for (String jL : jdbLocals) {
+				String left = jL.split(" = ")[0];
+				String right = jL.split(" = ")[1];
+				if (left.equals("wenhao" + parts[2])) {
+					parts[2] = right.replace("(", "<").replace(")", ">").replace("instance of ", "");
+					break;
+				}
+			}
+			result.setRightA(parts[0] + ">>" + parts[1] + ">>" + parts[2]);
+		}
+		return result;
+	}
+
+	private void updatePathCondition(ArrayList<Condition> pathCondition,
+			Condition condition, ArrayList<Operation> symbolicRelations) {
+		boolean leftDone = false, rightDone = false;
+		if (condition.getRight().equals("0"))
+			rightDone = true;
+		for (Operation o : symbolicRelations) {
+			if (o.getLeft().equals(condition.getLeft()) && !leftDone) {
+				String newExpr = "(" + o.toString().split(" = ")[1].trim() + ")";
+				condition.setLeft(newExpr);
+				leftDone = true;
+			}
+			else if (o.getLeft().equals(condition.getRight()) && !rightDone) {
+				String newExpr = "(" + o.toString().split(" = ")[1].trim() + ")";
+				condition.setRight(newExpr);
+				rightDone = true;
+			}
+			if (leftDone && rightDone)
+				break;
+		}
+		pathCondition.add(condition);
+	}
+
 	private Operation generateNewSymbolOperation(StaticStmt s) {
 		Operation o = new Operation();
 		if (!s.generatesSymbol())
@@ -117,7 +194,10 @@ public class Execution {
 		o.setNoOp(true);
 		if (s instanceof FieldStmt) {
 			o.setLeft(s.getvA());
-			o.setRightA(((FieldStmt) s).getObject());
+			o.setRightA("$instanceF>>" + ((FieldStmt) s).getFieldSig() + ">>" + ((FieldStmt) s).getObject());
+			if (((FieldStmt) s).isStatic()) {
+				o.setRightA("$staticF>>" + ((FieldStmt) s).getFieldSig());
+			}
 		}
 		else if (s instanceof MoveStmt) {
 			//o.setLeft(s.getvA());
@@ -125,7 +205,7 @@ public class Execution {
 		return o;
 	}
 
-	private void updateSymbolicRelations(ArrayList<Operation> symbolicRelations, Operation newO) {
+	private void updateSymbolicRelations(ArrayList<Operation> symbolicRelations, Operation newO, boolean newSymbol) {
 		int index = -1;
 		for (int i = 0, len = symbolicRelations.size(); i < len; i++) {
 			if (symbolicRelations.get(i).getLeft().equals(newO.getLeft())) {
@@ -133,37 +213,49 @@ public class Execution {
 				break;
 			}
 		}
-		String rightA = newO.getRightA();
-		if (!rightA.startsWith("#")) {
-			for (Operation oldO : symbolicRelations) {
-				if (oldO.getLeft().equals(rightA)) {
-					String relation = "(" + oldO.toString().split(" = ")[1] + ")";
-					newO.setRightA(relation);
-					break;
+		if (!newSymbol) {
+			String rightA = newO.getRightA();
+			String oldOS = "";
+			if (!rightA.startsWith("#")) {
+				for (Operation oldO : symbolicRelations) {
+					if (oldO.getLeft().equals(rightA)) {
+						String relation = "(" + oldO.toString().split(" = ")[1].trim() + ")";
+						oldOS = oldO.toString();
+						newO.setRightA(relation);
+						break;
+					}
 				}
 			}
-		}
-		if (!newO.isNoOp() && !newO.getRightB().startsWith("#")) {
-			for (Operation oldO : symbolicRelations) {
-				if (oldO.getLeft().equals(newO.getRightB())) {
-					String relation = "(" + oldO.toString().split(" = ")[1] + ")";
-					newO.setRightB(relation);
-					break;
+			if (!newO.isNoOp() && !newO.getRightB().startsWith("#")) {
+				for (Operation oldO : symbolicRelations) {
+					if (oldO.getLeft().equals(newO.getRightB())) {
+						String relation = "(" + oldO.toString().split(" = ")[1].trim() + ")";
+						newO.setRightB(relation);
+						break;
+					}
 				}
 			}
+			System.out.println("[OLDO]" + oldOS);
 		}
 		System.out.println("[NEWO]" + newO.toString());
-		if (index == -1)
-			symbolicRelations.add(newO);
-		else	symbolicRelations.set(index, newO);
+		if (index != -1) {
+			symbolicRelations.remove(index);
+		}
+		symbolicRelations.add(newO);
 	}
 
 	private void preparation() throws Exception{
 		
+		//adb.rebootDevice();
+		//System.out.print("Waiting for device to reboot...  ");
+		//Thread.sleep(30000);
+		//System.out.println("OK.");
 		adb.uninstallApp(staticApp.getPackageName());
 		adb.installApp(staticApp.getSignedAppPath());
+		//adb.unlockScreen();
 		adb.startApp(pkgName, staticApp.getMainActivity().getJavaName());
 		
+		System.out.println("\nInitiating jdb..");
 		jdb.init(pkgName);
 		
 		for (int i = 0, len = seq.size()-1; i < len; i++) {

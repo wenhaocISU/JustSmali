@@ -37,6 +37,18 @@ public class Adb {
 		return "";
 	}
 		
+	public void rebootDevice() {
+		try {
+			Runtime.getRuntime().exec(Paths.adbPath + " reboot").waitFor();
+		}	catch (Exception e) {e.printStackTrace();}
+	}
+	
+	public void unlockScreen() {
+		try {
+			Runtime.getRuntime().exec(Paths.adbPath + " shell input keyevent 82").waitFor();
+		}	catch (Exception e) {e.printStackTrace();}
+	}
+	
 	public void startApp(String packageName, String mainActName) {
 		try {
 			Runtime.getRuntime().exec(Paths.adbPath + " shell am start -n " + packageName + "/" + mainActName).waitFor();
