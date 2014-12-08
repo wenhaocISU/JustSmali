@@ -113,9 +113,11 @@ public class Execution {
 					StaticClass targetC = staticApp.findClassByDexName(iS.getTargetSig().split("->")[0]);
 					if (targetM != null && targetC != null) {
 						ArrayList<Integer> invokedLines = targetM.getSourceLineNumbers();
+						int finalLine = -1;
 						for (int tL : invokedLines) {
 							jdb.setBreakPointAtLine(targetC.getJavaName(), tL);
 							System.out.println("setting breakpoint " + targetC.getJavaName() + ":" + tL);
+							finalLine = tL;
 						}
 						System.out.println("    [Paused for 5 seconds]...");
 						Thread.sleep(3000);
@@ -138,9 +140,10 @@ public class Execution {
 								String subLineNumber = subLineInfo.substring(subLineInfo.indexOf("line=")+5);
 								subLineNumber = subLineNumber.substring(0, subLineNumber.indexOf(" "));
 								System.out.println("  " + subClassName + " " + subMethodName + " " + subLineNumber);
+								System.out.println("  " + targetC.getJavaName() + " " + targetM.getName() + " " + finalLine);
 								//process the stmt here
 								if (subClassName.equals(targetC.getJavaName()) && subMethodName.equals(targetM.getName())
-										&& subLineNumber.equals(targetM.getSourceLineNumbers().get(targetM.getSourceLineNumbers().size()-1) + ""))
+										&& subLineNumber.equals(finalLine + ""))
 									break;
 								jdb.cont();
 							}
