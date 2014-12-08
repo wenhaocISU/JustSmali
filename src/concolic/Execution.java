@@ -118,13 +118,26 @@ public class Execution {
 							System.out.println("setting breakpoint " + targetC.getJavaName() + ":" + tL);
 						}
 						System.out.println("    [Paused for 5 seconds]...");
-						Thread.sleep(5000);
+						Thread.sleep(3000);
 						String test = "";
 						while (test != null && !test.equals("TIMEOUT")) {
 							System.out.println(test);
 							test = jdb.readLine();
 						}
-						Thread.sleep(1000000);
+						Thread.sleep(3000);
+						System.out.println("Trying to run it now");
+						jdb.cont();
+						String newInvokedLine = "";
+						while (!newInvokedLine.equals("TIMEOUT")) {
+							if (newInvokedLine.startsWith("Breakpoint hit")) {
+								System.out.println(newInvokedLine);
+								jdb.cont();
+							}
+							newInvokedLine = jdb.readLine();
+							if (newInvokedLine == null)
+								System.out.println("Jdb crashed.");
+							Thread.sleep(100);
+						}
 					}
 				}
 				System.out.println("jdb Locals: ");
