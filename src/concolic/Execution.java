@@ -115,10 +115,11 @@ public class Execution {
 						ArrayList<Integer> invokedLines = targetM.getSourceLineNumbers();
 						for (int tL : invokedLines) {
 							jdb.setBreakPointAtLine(targetC.getJavaName(), tL);
+							System.out.println("setting breakpoint " + targetC.getJavaName() + ":" + tL);
 						}
 						System.out.println("    [Paused for 5 seconds]...");
 						Thread.sleep(5000);
-						String test = jdb.readLine();
+						String test = "";
 						while (test != null && !test.equals("TIMEOUT")) {
 							System.out.println(test);
 							test = jdb.readLine();
