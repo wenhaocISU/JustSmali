@@ -55,8 +55,22 @@ public class Operation implements Serializable{
 		this.op = op;
 	}
 	
-	public String toString() {
+	public String toOldString() {
+		if (noOp)
+			return left + " = " + rightA;
 		return left + " = " + rightA + " " + op + " " + rightB;
+	}
+	
+	public String toString() {
+		if (noOp)
+			return "(= " + left + " " + "(" + rightA + " ))";
+		return "(= " + left + " " + "(" + op + " " + rightA + " " + rightB + " " + "))";
+	}
+	
+	public String getRight() {
+		if (noOp)
+			return "(" + rightA + " )";
+		return "(" + op + " " + rightA + " " + rightB + " )";
 	}
 
 }

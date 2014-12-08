@@ -324,6 +324,7 @@ public class Parser {
 			param = param.substring(1, param.length()-1);
 			s.setParams(param);
 			String methodSig = arguments.substring(arguments.lastIndexOf(", ")+2);
+			s.setTargetSig(methodSig);
 			String tgtCN = methodSig.split("->")[0];
 			StaticClass tgtC = staticApp.findClassByDexName(tgtCN);
 			if (tgtC != null) {

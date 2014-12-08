@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import smali.stmt.FieldStmt;
 import smali.stmt.IfStmt;
+import smali.stmt.InvokeStmt;
 import smali.stmt.MoveStmt;
 import staticFamily.StaticApp;
 import staticFamily.StaticClass;
@@ -39,12 +40,64 @@ public class Execution {
 	public void doIt() {
 		try {
 			preparation();
-			firstIteration();
+			PathSummary firstPS = firstIteration();
+			
 			//newFirstIteration();
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 	
-	private void firstIteration() throws Exception {
+	private PathSummary newFirstIteration() throws Exception {
+		
+		PathSummary pS = new PathSummary();
+		final ArrayList<Operation> symbolicStates = new ArrayList<Operation>();
+		final ArrayList<Condition> pathConditions = new ArrayList<Condition>();
+		ArrayList<Integer> executionLog = new ArrayList<Integer>();
+		
+		String jdbNewLine = "";
+		while (!jdbNewLine.equals("TIMEOUT")) {
+			if (!jdbNewLine.equals(""))
+				System.out.println("[JDBOut]" + jdbNewLine);
+			if (jdbNewLine.startsWith("Breakpoint hit: ")) {
+				String trimming = jdb.readLine();
+				while (!trimming.equals("TIMEOUT"))
+					trimming = jdb.readLine();
+				String methodInfo = jdbNewLine.split(", ")[1];
+				String cN = methodInfo.substring(0, methodInfo.lastIndexOf("."));
+				String mN = methodInfo.substring(methodInfo.lastIndexOf(".")+1).replace("(", "").replace(")", "");
+				String lineInfo = jdbNewLine.split(", ")[2];
+				int newHitLine = Integer.parseInt(lineInfo.substring(lineInfo.indexOf("=")+1, lineInfo.indexOf(" ")));
+				pS.addExecutionLog(cN + ":" + newHitLine);
+				StaticClass c = staticApp.findClassByJavaName(cN);
+				if (c == null)	continue;
+				StaticMethod m = c.getMethod(mN, newHitLine);
+				if (m == null)	continue;
+				StaticStmt s = m.getStmtByLineNumber(newHitLine);
+				if (s == null)	continue;
+				// 1. Generates Symbol?
+				if (s.generatesSymbol()) {
+					
+				}
+				// 2. Has Operation?
+				else if (s.hasOperation()) {
+					
+				}
+				// 3. Updates Path Condition?
+				else if (s instanceof IfStmt) {
+					
+				}
+				// 4. Invokes Method?
+				else if (s instanceof InvokeStmt) {
+					
+				}
+			}
+		}
+		
+		pS.setSymbolicStates(symbolicStates);
+		pS.setPathCondition(pathConditions);
+		return pS;
+	}
+	
+	private PathSummary firstIteration() throws Exception {
 		adb.click(seq.get(seq.size()-1));
 		Thread.sleep(100);
 		String newLine = "";
@@ -69,7 +122,7 @@ public class Execution {
 				String mN = methodInfo.substring(methodInfo.lastIndexOf(".")+1).replace("(", "").replace(")", "");
 				String lineInfo = newLine.split(", ")[2];
 				int newHitLine = Integer.parseInt(lineInfo.substring(lineInfo.indexOf("=")+1, lineInfo.indexOf(" ")));
-				pS.addExecutionLog(newHitLine);
+				pS.addExecutionLog(cN + ":" + newHitLine);
 				StaticClass c = staticApp.findClassByJavaName(cN);
 				if (c == null)	continue;
 				StaticMethod m = c.getMethod(mN, newHitLine);
@@ -92,11 +145,13 @@ public class Execution {
 					}
 					newPathCondition = false;
 				}
+				// 1/4 Operation
 				if (s.hasOperation()) {
 					System.out.println("    *operation: " + s.getOperation().toString());
 					Operation newO = s.getOperation();
 					updateSymbolicRelations(symbolicRelations, newO, false);
 				}
+				// 2/4 Generates Symbol
 				if (s.generatesSymbol()) {
 					System.out.print("    *generates symbol:  ");
 					// 2 things: First, add to symbol table; Second, v = $
@@ -104,11 +159,29 @@ public class Execution {
 					newSymbolO = generateNewSymbolOperation(s);
 					System.out.println(newSymbolO.toString());
 				}
+				// 3/4 Path Condition
 				if (s instanceof IfStmt) {
 					System.out.println("    *condition: " + ((IfStmt)s).getCondition().toString());
 					updatePathCondition(pathCondition, ((IfStmt)s).getCondition(), symbolicRelations);
 					newPathCondition = true;
 					nextPossibleLine = m.getFirstLineNumberOfBlock(((IfStmt) s).getTargetLabel());
+				}
+				// 4/4 Method Invocation
+				if (s instanceof InvokeStmt) {
+					InvokeStmt iS = (InvokeStmt) s;
+					System.out.println("    *invokes: " + iS.getTargetSig());
+					System.out.println("    *with param: " + iS.getParams());
+					StaticMethod targetM = staticApp.findMethod(iS.getTargetSig());
+					StaticClass targetC = staticApp.findClassByDexName(iS.getTargetSig().split("->")[0]);
+					if (targetM != null && targetC != null) {
+						ArrayList<Integer> targetLines = targetM.getSourceLineNumbers();
+						for (int tL : targetLines) {
+							jdb.setBreakPointAtLine(targetC.getJavaName(), tL);
+							//System.out.println("---- Setting BP " + targetC.getJavaName() + ":" + tL);
+							//System.out.println("---- " + jdb.readLine());
+						}
+						
+					}
 				}
 				System.out.println("    *locals: ");
 				ArrayList<String> jdbLocals = jdb.getLocals();
@@ -131,6 +204,8 @@ public class Execution {
 			Thread.sleep(100);
 		}
 		System.out.println("Finished");
+		pS.setSymbolicStates(symbolicRelations);
+		pS.setPathCondition(pathCondition);
 		System.out.println("Execution Log:");
 		for (int i : executionLog)
 			System.out.print(i + "  ");
@@ -143,6 +218,7 @@ public class Execution {
 		for (Condition cond : pathCondition) {
 			System.out.println(" " + cond.toString());
 		}
+		return pS;
 	}
 	
 	
@@ -172,12 +248,12 @@ public class Execution {
 			rightDone = true;
 		for (Operation o : symbolicRelations) {
 			if (o.getLeft().equals(condition.getLeft()) && !leftDone) {
-				String newExpr = "(" + o.toString().split(" = ")[1].trim() + ")";
+				String newExpr = o.getRight();
 				condition.setLeft(newExpr);
 				leftDone = true;
 			}
 			else if (o.getLeft().equals(condition.getRight()) && !rightDone) {
-				String newExpr = "(" + o.toString().split(" = ")[1].trim() + ")";
+				String newExpr = o.getRight();
 				condition.setRight(newExpr);
 				rightDone = true;
 			}
@@ -219,7 +295,7 @@ public class Execution {
 			if (!rightA.startsWith("#")) {
 				for (Operation oldO : symbolicRelations) {
 					if (oldO.getLeft().equals(rightA)) {
-						String relation = "(" + oldO.toString().split(" = ")[1].trim() + ")";
+						String relation = oldO.getRight();
 						oldOS = oldO.toString();
 						newO.setRightA(relation);
 						break;
@@ -229,7 +305,7 @@ public class Execution {
 			if (!newO.isNoOp() && !newO.getRightB().startsWith("#")) {
 				for (Operation oldO : symbolicRelations) {
 					if (oldO.getLeft().equals(newO.getRightB())) {
-						String relation = "(" + oldO.toString().split(" = ")[1].trim() + ")";
+						String relation = oldO.getRight();
 						newO.setRightB(relation);
 						break;
 					}

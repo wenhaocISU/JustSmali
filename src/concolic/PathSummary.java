@@ -6,24 +6,24 @@ import java.util.ArrayList;
 @SuppressWarnings("serial")
 public class PathSummary implements Serializable{
 
-	private ArrayList<Integer> executionLog = new ArrayList<Integer>();
+	private ArrayList<String> executionLog = new ArrayList<String>();
 	private ArrayList<Condition> pathCondition = new ArrayList<Condition>();
 	private ArrayList<Operation> symbolicStates = new ArrayList<Operation>();
 	
-	public ArrayList<Integer> getExecutionLog() {
+	public ArrayList<String> getExecutionLog() {
 		return executionLog;
 	}
 	
-	public void addExecutionLog(int lineNumber) {
-		this.executionLog.add(lineNumber);
+	public void addExecutionLog(String newLine) {
+		this.executionLog.add(newLine);
 	}
 
 	public ArrayList<Condition> getPathCondition() {
 		return pathCondition;
 	}
 
-	public void addPathCondition(Condition pathCondition) {
-		this.pathCondition.add(pathCondition);
+	public void setPathCondition(ArrayList<Condition> pathConditions) {
+		this.pathCondition = pathConditions;
 	}
 
 	public ArrayList<Operation> getSymbolicStates() {
