@@ -131,6 +131,16 @@ public class Execution {
 						while (!newInvokedLine.equals("TIMEOUT")) {
 							if (newInvokedLine.startsWith("Breakpoint hit")) {
 								System.out.println(newInvokedLine);
+								String subMethodInfo = newInvokedLine.split(",")[1].replace("(", "").replace(")", "");
+								String subLineInfo = newInvokedLine.split(",")[2];
+								String subClassName = subMethodInfo.substring(0, subMethodInfo.lastIndexOf("."));
+								String subMethodName = subMethodInfo.substring(subMethodInfo.lastIndexOf(".")+1);
+								String subLineNumber = subLineInfo.substring(subLineInfo.indexOf("line=")+5);
+								subLineNumber = subLineNumber.substring(0, subLineNumber.indexOf(" "));
+								//process the stmt here
+								if (subClassName.equals(targetC.getJavaName()) && subMethodName.equals(targetM.getName())
+										&& subLineNumber.equals(targetM.getSourceLineNumbers().get(targetM.getSourceLineNumbers().size()-1) + ""))
+									break;
 								jdb.cont();
 							}
 							newInvokedLine = jdb.readLine();
