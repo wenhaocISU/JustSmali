@@ -47,11 +47,12 @@ public class Execution {
 	}
 	
 	private PathSummary newFirstIteration() throws Exception {
+		adb.click(seq.get(seq.size()-1));
+		Thread.sleep(100);
 		
 		PathSummary pS = new PathSummary();
 		final ArrayList<Operation> symbolicStates = new ArrayList<Operation>();
 		final ArrayList<Condition> pathConditions = new ArrayList<Condition>();
-		ArrayList<Integer> executionLog = new ArrayList<Integer>();
 		
 		boolean newPathCondition = false; int nextPossibleLine = -1; StaticStmt lastPathStmt = new StaticStmt();
 		
@@ -145,9 +146,11 @@ public class Execution {
 		final ArrayList<Operation> symbolicRelations = new ArrayList<Operation>();
 		final ArrayList<Condition> pathCondition = new ArrayList<Condition>();
 		ArrayList<Integer> executionLog = new ArrayList<Integer>();
-		boolean newSymbol = false;
+		
 		boolean newPathCondition = false;
 		int nextPossibleLine = -1;
+		StaticStmt lastPathStmt = new StaticStmt();
+		
 		Operation newSymbolO = new Operation();
 		while (!newLine.equals("TIMEOUT")) {
 			if (!newLine.equals(""))
@@ -171,40 +174,35 @@ public class Execution {
 				if (s == null)	continue;
 				executionLog.add(newHitLine);
 				System.out.println("    *bytecode: " + s.getTheStmt());
-				if (newSymbol) {
-					newSymbolO = updateConcreteSymbol(newSymbolO);
-					updateSymbolicStates(symbolicRelations, newSymbolO, true);
-					newSymbol = false;
-					newSymbolO = new Operation();
-				}
 				if (newPathCondition) {
-					if (newHitLine != nextPossibleLine) {
+					if (lastPathStmt instanceof IfStmt && newHitLine != nextPossibleLine) {
 						Condition lastCond = pathCondition.get(pathCondition.size()-1);
 						lastCond.reverseCondition();
 						pathCondition.set(pathCondition.size()-1, lastCond);
 					}
 					newPathCondition = false;
 				}
-				// 1/4 Operation
 				if (s.hasOperation()) {
 					System.out.println("    *operation: " + s.getOperation().toString());
 					Operation newO = s.getOperation();
 					updateSymbolicStates(symbolicRelations, newO, false);
 				}
-				// 2/4 Generates Symbol
 				if (s.generatesSymbol()) {
 					System.out.print("    *generates symbol:  ");
-					// 2 things: First, add to symbol table; Second, v = $
-					newSymbol = true;
 					newSymbolO = generateNewSymbolOperation(s);
+					newSymbolO = updateConcreteSymbol(newSymbolO);
+					updateSymbolicStates(symbolicRelations, newSymbolO, true);
 					System.out.println(newSymbolO.toString());
 				}
 				// 3/4 Path Condition
-				if (s instanceof IfStmt) {
-					System.out.println("    *condition: " + ((IfStmt)s).getCondition().toString());
-					updatePathCondition(pathCondition, ((IfStmt)s).getCondition(), symbolicRelations);
-					newPathCondition = true;
-					nextPossibleLine = m.getFirstLineNumberOfBlock(((IfStmt) s).getTargetLabel());
+				if (s.updatesPathCondition()) {
+					if (s instanceof IfStmt) {
+						System.out.println("    *condition: " + ((IfStmt)s).getCondition().toString());
+						updatePathCondition(pathCondition, ((IfStmt)s).getCondition(), symbolicRelations);
+						newPathCondition = true;
+						nextPossibleLine = m.getFirstLineNumberOfBlock(((IfStmt) s).getTargetLabel());
+						lastPathStmt = s;
+					}
 				}
 				// 4/4 Method Invocation
 				if (s instanceof InvokeStmt) {
