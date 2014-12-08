@@ -133,8 +133,8 @@ public class Execution {
 						while (!newInvokedLine.equals("TIMEOUT")) {
 							if (newInvokedLine.startsWith("Breakpoint hit")) {
 								System.out.println(newInvokedLine);
-								String subMethodInfo = newInvokedLine.split(",")[1].replace("(", "").replace(")", "");
-								String subLineInfo = newInvokedLine.split(",")[2];
+								String subMethodInfo = newInvokedLine.split(",")[1].replace("(", "").replace(")", "").trim();
+								String subLineInfo = newInvokedLine.split(",")[2].trim();
 								String subClassName = subMethodInfo.substring(0, subMethodInfo.lastIndexOf("."));
 								String subMethodName = subMethodInfo.substring(subMethodInfo.lastIndexOf(".")+1);
 								String subLineNumber = subLineInfo.substring(subLineInfo.indexOf("line=")+5);
