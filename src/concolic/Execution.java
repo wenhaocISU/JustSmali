@@ -40,13 +40,12 @@ public class Execution {
 	public void doIt() {
 		try {
 			preparation();
-			//PathSummary firstPS = firstIteration();
-			PathSummary firstPS = newFirstIteration();
-			//newFirstIteration();
+			PathSummary firstPS = firstIteration();
+			
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 	
-	private PathSummary newFirstIteration() throws Exception {
+	private PathSummary firstIteration() throws Exception {
 		adb.click(seq.get(seq.size()-1));
 		Thread.sleep(100);
 		
@@ -109,7 +108,23 @@ public class Execution {
 				}
 				// 4. Invokes Method?
 				else if (s instanceof InvokeStmt) {
-					
+					InvokeStmt iS = (InvokeStmt) s;
+					StaticMethod targetM = staticApp.findMethod(iS.getTargetSig());
+					StaticClass targetC = staticApp.findClassByDexName(iS.getTargetSig().split("->")[0]);
+					if (targetM != null && targetC != null) {
+						ArrayList<Integer> invokedLines = targetM.getSourceLineNumbers();
+						for (int tL : invokedLines) {
+							jdb.setBreakPointAtLine(targetC.getJavaName(), tL);
+						}
+						System.out.println("    [Paused for 5 seconds]...");
+						Thread.sleep(5000);
+						String test = jdb.readLine();
+						while (test != null && !test.equals("TIMEOUT")) {
+							System.out.println(test);
+							test = jdb.readLine();
+						}
+						Thread.sleep(1000000);
+					}
 				}
 				System.out.println("jdb Locals: ");
 				ArrayList<String> jdbLocals = jdb.getLocals();
@@ -141,7 +156,7 @@ public class Execution {
 		return pS;
 	}
 	
-	private PathSummary firstIteration() throws Exception {
+	private PathSummary oldFirstIteration() throws Exception {
 		adb.click(seq.get(seq.size()-1));
 		Thread.sleep(100);
 		String newLine = "";
