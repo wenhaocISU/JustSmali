@@ -137,6 +137,7 @@ public class Execution {
 								String subMethodName = subMethodInfo.substring(subMethodInfo.lastIndexOf(".")+1);
 								String subLineNumber = subLineInfo.substring(subLineInfo.indexOf("line=")+5);
 								subLineNumber = subLineNumber.substring(0, subLineNumber.indexOf(" "));
+								System.out.println("  " + subClassName + " " + subMethodName + " " + subLineNumber);
 								//process the stmt here
 								if (subClassName.equals(targetC.getJavaName()) && subMethodName.equals(targetM.getName())
 										&& subLineNumber.equals(targetM.getSourceLineNumbers().get(targetM.getSourceLineNumbers().size()-1) + ""))
