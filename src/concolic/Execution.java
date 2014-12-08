@@ -124,6 +124,9 @@ public class Execution {
 				for (Condition cond : pathConditions) {
 					System.out.println(" " + cond.toString());
 				}
+				System.out.println("Current Execution Log:");
+				for (String exeLine : pS.getExecutionLog())
+					System.out.println(" " + exeLine);
 				System.out.println("\n");
 				jdb.cont();
 			}
