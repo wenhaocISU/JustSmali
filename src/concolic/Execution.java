@@ -73,9 +73,9 @@ public class Execution {
 				if (m == null)	continue;
 				StaticStmt s = m.getStmtByLineNumber(newHitLine);
 				if (s == null)	continue;
-				// 1. Generates Symbol?
+				// 1. Generates Symbol? (GetField, MoveResultFromInvoke)
 				if (s.generatesSymbol()) {
-					
+					Operation o = generateNewSymbolOperation(s);
 				}
 				// 2. Has Operation?
 				else if (s.hasOperation()) {
