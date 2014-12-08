@@ -40,14 +40,15 @@ public class Execution {
 	public void doIt() {
 		try {
 			preparation();
+			adb.click(seq.get(seq.size()-1));
+			Thread.sleep(100);
 			PathSummary firstPS = firstIteration();
 			
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 	
 	private PathSummary firstIteration() throws Exception {
-		adb.click(seq.get(seq.size()-1));
-		Thread.sleep(100);
+
 		
 		PathSummary pS = new PathSummary();
 		final ArrayList<Operation> symbolicStates = new ArrayList<Operation>();
@@ -144,7 +145,6 @@ public class Execution {
 								//process the stmt here
 								if (subClassName.equals(targetC.getJavaName()) && subMethodName.equals(targetM.getName())
 										&& subLineNumber.equals(finalLine + "")) {
-									System.out.println("[SHOULD END HERE]");
 									break;
 								}
 								jdb.cont();
@@ -439,6 +439,8 @@ public class Execution {
 		for (int i : targetM.getSourceLineNumbers()) {
 			jdb.setBreakPointAtLine(targetM.getDeclaringClass(staticApp).getJavaName(), i);
 		}
+		
+		while (!jdb.readLine().equals("TIMEOUT"));
 		
 	}
 
