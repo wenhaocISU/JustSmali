@@ -143,8 +143,10 @@ public class Execution {
 								System.out.println("  " + targetC.getJavaName() + " " + targetM.getName() + " " + finalLine);
 								//process the stmt here
 								if (subClassName.equals(targetC.getJavaName()) && subMethodName.equals(targetM.getName())
-										&& subLineNumber.equals(finalLine + ""))
+										&& subLineNumber.equals(finalLine + "")) {
+									System.out.println("[SHOULD END HERE]");
 									break;
+								}
 								jdb.cont();
 							}
 							newInvokedLine = jdb.readLine();
