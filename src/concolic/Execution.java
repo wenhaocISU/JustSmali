@@ -40,8 +40,8 @@ public class Execution {
 	public void doIt() {
 		try {
 			preparation();
-			PathSummary firstPS = firstIteration();
-			
+			//PathSummary firstPS = firstIteration();
+			PathSummary firstPS = newFirstIteration();
 			//newFirstIteration();
 		}	catch (Exception e) {e.printStackTrace();}
 	}
@@ -52,6 +52,8 @@ public class Execution {
 		final ArrayList<Operation> symbolicStates = new ArrayList<Operation>();
 		final ArrayList<Condition> pathConditions = new ArrayList<Condition>();
 		ArrayList<Integer> executionLog = new ArrayList<Integer>();
+		
+		boolean newPathCondition = false; int nextPossibleLine = -1; StaticStmt lastPathStmt = new StaticStmt();
 		
 		String jdbNewLine = "";
 		while (!jdbNewLine.equals("TIMEOUT")) {
@@ -73,25 +75,63 @@ public class Execution {
 				if (m == null)	continue;
 				StaticStmt s = m.getStmtByLineNumber(newHitLine);
 				if (s == null)	continue;
+				// 0. If last stmt creates path, update path conditions here
+				if (newPathCondition) {
+					if (lastPathStmt instanceof IfStmt && newHitLine!= nextPossibleLine) {
+						Condition lastCond = pathConditions.get(pathConditions.size()-1);
+						lastCond.reverseCondition();
+						pathConditions.set(pathConditions.size()-1, lastCond);
+					}
+					newPathCondition = false;
+					lastPathStmt = new StaticStmt();
+				}
 				// 1. Generates Symbol? (GetField, MoveResultFromInvoke)
 				if (s.generatesSymbol()) {
 					Operation o = generateNewSymbolOperation(s);
+					updateSymbolicStates(symbolicStates, o, true);
+					System.out.println("    [Generates Symbol]");
 				}
 				// 2. Has Operation?
 				else if (s.hasOperation()) {
-					
+					updateSymbolicStates(symbolicStates, s.getOperation(), false);
+					System.out.println("    [Has Operation]");
 				}
 				// 3. Updates Path Condition?
-				else if (s instanceof IfStmt) {
-					
+				else if (s.updatesPathCondition()) {
+					lastPathStmt = s;
+					if (s instanceof IfStmt) {
+						updatePathCondition(pathConditions, ((IfStmt) s).getCondition(), symbolicStates);
+						newPathCondition = true;
+						nextPossibleLine = m.getFirstLineNumberOfBlock(((IfStmt) s).getTargetLabel());
+						System.out.println("    [Path Cond will be updated next stmt]");
+					}
 				}
 				// 4. Invokes Method?
 				else if (s instanceof InvokeStmt) {
 					
 				}
+				System.out.println("jdb Locals: ");
+				ArrayList<String> jdbLocals = jdb.getLocals();
+				for (String lL : jdbLocals) {
+					System.out.println("     " + lL);
+				}
+				System.out.println("Symbolic States:");
+				for (Operation o : symbolicStates) {
+					System.out.println(" " + o.toString());
+				}
+				System.out.println("Path Condition:");
+				for (Condition cond : pathConditions) {
+					System.out.println(" " + cond.toString());
+				}
+				System.out.println("\n");
+				jdb.cont();
 			}
+			jdbNewLine = jdb.readLine();
+			if (jdbNewLine == null)
+				System.out.println("Jdb crashed.");
+			Thread.sleep(100);
 		}
-		
+		System.out.println("Finished.");
 		pS.setSymbolicStates(symbolicStates);
 		pS.setPathCondition(pathConditions);
 		return pS;
@@ -133,7 +173,7 @@ public class Execution {
 				System.out.println("    *bytecode: " + s.getTheStmt());
 				if (newSymbol) {
 					newSymbolO = updateConcreteSymbol(newSymbolO);
-					updateSymbolicRelations(symbolicRelations, newSymbolO, true);
+					updateSymbolicStates(symbolicRelations, newSymbolO, true);
 					newSymbol = false;
 					newSymbolO = new Operation();
 				}
@@ -149,7 +189,7 @@ public class Execution {
 				if (s.hasOperation()) {
 					System.out.println("    *operation: " + s.getOperation().toString());
 					Operation newO = s.getOperation();
-					updateSymbolicRelations(symbolicRelations, newO, false);
+					updateSymbolicStates(symbolicRelations, newO, false);
 				}
 				// 2/4 Generates Symbol
 				if (s.generatesSymbol()) {
@@ -270,18 +310,29 @@ public class Execution {
 		o.setNoOp(true);
 		if (s instanceof FieldStmt) {
 			o.setLeft(s.getvA());
-			o.setRightA("$instanceF>>" + ((FieldStmt) s).getFieldSig() + ">>" + ((FieldStmt) s).getObject());
-			if (((FieldStmt) s).isStatic()) {
+			if (((FieldStmt) s).isStatic())
 				o.setRightA("$staticF>>" + ((FieldStmt) s).getFieldSig());
+			else {
+				String objectName = ((FieldStmt) s).getObject();
+				ArrayList<String> jdbLocals = jdb.getLocals();
+				for (String jL : jdbLocals) {
+					String left = jL.split(" = ")[0];
+					String right = jL.split(" = ")[1];
+					if (left.equals("wenhao" + objectName)) {
+						objectName = right.replace("(", "<").replace(")", ">").replace("instance of ", "");
+						break;
+					}
+				}
+				o.setRightA("$instanceF>>" + ((FieldStmt) s).getFieldSig() + ">>" + objectName);
 			}
 		}
 		else if (s instanceof MoveStmt) {
-			//o.setLeft(s.getvA());
+			
 		}
 		return o;
 	}
 
-	private void updateSymbolicRelations(ArrayList<Operation> symbolicRelations, Operation newO, boolean newSymbol) {
+	private void updateSymbolicStates(ArrayList<Operation> symbolicRelations, Operation newO, boolean newSymbol) {
 		int index = -1;
 		for (int i = 0, len = symbolicRelations.size(); i < len; i++) {
 			if (symbolicRelations.get(i).getLeft().equals(newO.getLeft())) {

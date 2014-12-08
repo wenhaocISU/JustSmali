@@ -315,6 +315,7 @@ public class Parser {
 			if (s.has2V())
 				s.setvC(arguments[2]);
 			s.setFlowsThrough(false);
+			s.setUpdatesPathCondition(true);
 			return s;
 		}
 		if (StmtFormat.isInvoke(line)) {
@@ -387,6 +388,7 @@ public class Parser {
 			s.setIsPswitch(line.startsWith("packed-switch"));
 			s.setISSswitch(line.startsWith("sparse-switch"));
 			s.setFlowsThrough(false);
+			s.setUpdatesPathCondition(true);
 			return s;
 		}
 		if (StmtFormat.isThrow(line)) {

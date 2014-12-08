@@ -31,6 +31,8 @@ public class StaticStmt implements Serializable{
 	private boolean hasOperation = false;
 	private Operation operation = new Operation();
 	
+	private boolean updatesPathCondition = false;
+	
 	private BlockLabel blockLabel = new BlockLabel();
 		
 	private Map<String, String> vDebugInfo = new HashMap<String, String>();
@@ -186,6 +188,14 @@ public class StaticStmt implements Serializable{
 
 	public void addvDebugInfo(String localName, String debugName) {
 		this.vDebugInfo.put(localName, debugName);
+	}
+
+	public boolean updatesPathCondition() {
+		return updatesPathCondition;
+	}
+
+	public void setUpdatesPathCondition(boolean updatesPathCondition) {
+		this.updatesPathCondition = updatesPathCondition;
 	}
 
 	
