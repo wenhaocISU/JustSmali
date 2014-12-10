@@ -348,12 +348,13 @@ public class Parser {
 				if (lastS instanceof InvokeStmt) {
 					((InvokeStmt) lastS).setResultsMoved(true);
 					s.setGeneratesSymbol(true);
+					s.setResultMovedFrom(m.getSmaliStmts().size()-1);
 				}
 				else if (lastS instanceof NewStmt) {
 					if (((NewStmt) lastS).isNewArray())
 						((NewStmt) lastS).setNewArrayMoved(true);
 				}
-				else {System.out.println("something's wrong..\n\t" + m.getSmaliSignature() + "\n");}
+				else {System.out.println("something's wrong when parsing this MoveResult stmt..\n\t" + m.getSmaliSignature() + "\n");}
 			}
 			else {
 				String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
@@ -378,6 +379,9 @@ public class Parser {
 		if (StmtFormat.isReturn(line)) {
 			ReturnStmt s = new ReturnStmt();
 			s.setFlowsThrough(false);
+			s.setEndsMethod(true);
+			if (!s.returnsVoid())
+				s.setvA(line.substring(line.indexOf(" ")+1));
 			return s;
 		}
 		if (StmtFormat.isSwitch(line)) {
@@ -396,6 +400,7 @@ public class Parser {
 			String vA = line.substring(line.indexOf(" ")+1);
 			s.setvA(vA);
 			s.setFlowsThrough(false);
+			s.setEndsMethod(true);
 			return s;
 		}
 		if (StmtFormat.isV2OP(line)) {

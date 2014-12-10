@@ -5,7 +5,7 @@ import staticFamily.StaticStmt;
 @SuppressWarnings("serial")
 public class ReturnStmt extends StaticStmt {
 
-	public boolean isReturnVoid() {
+	public boolean returnsVoid() {
 		return getTheStmt().startsWith("return-void");
 	}
 	

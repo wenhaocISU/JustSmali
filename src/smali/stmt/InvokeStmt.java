@@ -18,7 +18,7 @@ public class InvokeStmt extends StaticStmt{
 		this.targetSig = targetSig;
 	}
 
-	public boolean isResultsMoved() {
+	public boolean resultsMoved() {
 		return resultsMoved;
 	}
 

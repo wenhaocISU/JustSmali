@@ -22,6 +22,8 @@ public class Jdb {
 	private OutputStream out;
 	private BufferedReader in;
 	
+	private ArrayList<String> breakpointsLog = new ArrayList<String>();
+	
 	public void init(String packageName) {
 		String osName = System.getProperty("os.name");
 		String pID = new Adb().getPID(packageName);
@@ -59,8 +61,11 @@ public class Jdb {
 	
 	public void setBreakPointAtLine(String className, int line) {
 		try {
-			out.write(("stop at " + className + ":" + line + "\n").getBytes());
-			out.flush();
+			if (!breakpointsLog.contains(className + ":" + line)) {
+				out.write(("stop at " + className + ":" + line + "\n").getBytes());
+				out.flush();
+				breakpointsLog.add(className + ":" + line);
+			}
 		}	catch (Exception e) { e.printStackTrace(); }
 	}
 	

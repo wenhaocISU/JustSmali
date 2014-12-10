@@ -34,4 +34,19 @@ public class PathSummary implements Serializable{
 		this.symbolicStates = symbolicStates;
 	}
 	
+	public PathSummary clone() {
+		PathSummary result = new PathSummary();
+		for (String s : executionLog)
+			result.addExecutionLog(s);
+		ArrayList<Operation> sStates = new ArrayList<Operation>();
+		for (Operation o : symbolicStates)
+			sStates.add(o);
+		result.setSymbolicStates(sStates);
+		ArrayList<Condition> pCond = new ArrayList<Condition>();
+		for (Condition cond : pathCondition)
+			pCond.add(cond);
+		result.setPathCondition(pCond);
+		return result;
+	}
+	
 }
