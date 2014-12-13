@@ -278,8 +278,8 @@ public class Parser {
 				Operation o = new Operation();
 				o.setNoOp(true);
 				if (s.isStatic())
-					o.setLeft("$staticF>>" + s.getFieldSig());
-				else o.setLeft("$instanceF>>" + s.getFieldSig() + ">>" + s.getObject());
+					o.setLeft("$Fstatic>>" + s.getFieldSig());
+				else o.setLeft("$Finstance>>" + s.getFieldSig() + ">>" + s.getObject());
 				o.setRightA(s.getSrcV());
 				s.setOperation(o);
 			}
