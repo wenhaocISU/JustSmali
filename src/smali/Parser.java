@@ -508,7 +508,7 @@ public class Parser {
 					if (line.startsWith(".packed-switch"))
 						ss.setpSwitchInitValue(line.split(" ")[1]);
 					else if (line.startsWith(":")) {
-						switchMap.put(""+psindex++, line);
+						switchMap.put("0x" + Integer.toHexString(psindex++), line);
 					}
 				}
 				else if (ss.isSswitch()){

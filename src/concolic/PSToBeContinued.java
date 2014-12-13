@@ -1,12 +1,14 @@
 package concolic;
 
+import java.util.ArrayList;
+
 public class PSToBeContinued {
 
 	private PathSummary pathSummary = new PathSummary();
 	
-	private int toBeFlipped = -1;
+	private String condStmtInfo = "";
 	
-	private int newDirection = -1;
+	private ArrayList<Integer> remainingPaths = new ArrayList<Integer>(); 
 
 	public PathSummary getPathSummary() {
 		return pathSummary;
@@ -16,23 +18,23 @@ public class PSToBeContinued {
 		this.pathSummary = pathSummary;
 	}
 
-	public int getToBeFlipped() {
-		return toBeFlipped;
+	public String getCondStmtInfo() {
+		return condStmtInfo;
 	}
 
-	public void setToBeFlipped(int toBeFlipped) {
-		this.toBeFlipped = toBeFlipped;
+	public void setCondStmtInfo(String condStmtInfo) {
+		this.condStmtInfo = condStmtInfo;
 	}
 
-	public int getNewDirection() {
-		return newDirection;
+	public ArrayList<Integer> getRemainingPaths() {
+		return remainingPaths;
 	}
 
-	public void setNewDirection(int newDirection) {
-		this.newDirection = newDirection;
+	public void setRemainingPaths(ArrayList<Integer> remainingPaths) {
+		this.remainingPaths = remainingPaths;
 	}
-	
-	
-	
+
+
+
 	
 }

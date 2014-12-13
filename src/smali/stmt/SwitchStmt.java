@@ -3,6 +3,9 @@ package smali.stmt;
 import java.util.HashMap;
 import java.util.Map;
 
+import concolic.Condition;
+import concolic.Operation;
+import staticFamily.StaticMethod;
 import staticFamily.StaticStmt;
 
 @SuppressWarnings("serial")
@@ -50,12 +53,34 @@ public class SwitchStmt extends StaticStmt{
 		this.pSwitchInitValue = pSwitchInitValue;
 	}
 	
-	public Map<String, String> getSwitchMap() {
-		return switchMap;
+	public Map<Condition, Integer> getSwitchMap(StaticMethod m) {
+		Map<Condition, Integer> result = new HashMap<Condition, Integer>();
+		for (Map.Entry<String, String> entry : switchMap.entrySet()) {
+			String value = entry.getKey();
+			if (!value.startsWith("#"))
+				value = "#" + value;
+			String targetLabel = entry.getValue();
+			Condition cond = new Condition();
+			cond.setLeft(this.getvA());
+			cond.setOp("=");
+			cond.setRight(value);
+			if (this.isPswitch) {
+				Operation o = new Operation();
+				o.setLeft(this.getvA());
+				o.setOp("add");
+				o.setRightA(this.pSwitchInitValue);
+				o.setRightB(value);
+				cond.setRight(o.getRight());
+			}
+			int targetLineNumber = m.getFirstLineNumberOfBlock(targetLabel);
+			result.put(cond, targetLineNumber);
+		}
+		return result;
 	}
 	
 	public void setSwitchMap(Map<String, String> switchMap) {
 		this.switchMap = switchMap;
 	}
 		
+
 }
