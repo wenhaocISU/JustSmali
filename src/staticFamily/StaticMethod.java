@@ -243,5 +243,6 @@ public class StaticMethod  implements Serializable{
 	public void setPathSummaries(ArrayList<PathSummary> pathSummaries) {
 		this.pathSummaries = pathSummaries;
 	}
+
 	
 }
