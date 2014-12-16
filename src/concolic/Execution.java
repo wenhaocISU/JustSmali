@@ -129,6 +129,7 @@ public class Execution {
 								remainingPaths.add(lineNumber);
 						}
 					}
+					pS.getExecutionLog();
 					newPathCondition = false;
 					lastPathStmt = new StaticStmt();
 				}
