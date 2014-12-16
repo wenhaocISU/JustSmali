@@ -8,6 +8,7 @@ import smali.stmt.IfStmt;
 import smali.stmt.InvokeStmt;
 import smali.stmt.MoveStmt;
 import smali.stmt.ReturnStmt;
+import smali.stmt.SwitchStmt;
 import staticFamily.StaticApp;
 import staticFamily.StaticClass;
 import staticFamily.StaticMethod;
@@ -145,6 +146,10 @@ public class Execution {
 						updatePathCondition(pathCondition, ((IfStmt) s).getCondition(), symbolicStates);
 						newPathCondition = true;
 						nextPossibleLineFromIfStmt = m.getFirstLineNumberOfBlock(((IfStmt) s).getTargetLabel());
+					}
+					else {
+						SwitchStmt sS = (SwitchStmt) s;
+						
 					}
 				}
 				// 4. Invokes Method?
