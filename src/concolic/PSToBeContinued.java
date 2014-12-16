@@ -1,14 +1,14 @@
 package concolic;
 
-import java.util.ArrayList;
+import staticFamily.StaticMethod;
 
 public class PSToBeContinued {
 
 	private PathSummary pathSummary = new PathSummary();
 	
-	private String condStmtInfo = "";
+	private StaticMethod currentMethod = new StaticMethod();
 	
-	private ArrayList<Integer> remainingPaths = new ArrayList<Integer>(); 
+	private int nextStepLineNumber; 
 
 	public PathSummary getPathSummary() {
 		return pathSummary;
@@ -18,23 +18,20 @@ public class PSToBeContinued {
 		this.pathSummary = pathSummary;
 	}
 
-	public String getCondStmtInfo() {
-		return condStmtInfo;
+	public int getNextStepLineNumber() {
+		return nextStepLineNumber;
 	}
 
-	public void setCondStmtInfo(String condStmtInfo) {
-		this.condStmtInfo = condStmtInfo;
+	public void setNextStepLineNumber(int nextStepLineNumber) {
+		this.nextStepLineNumber = nextStepLineNumber;
 	}
 
-	public ArrayList<Integer> getRemainingPaths() {
-		return remainingPaths;
+	public StaticMethod getCurrentMethod() {
+		return currentMethod;
 	}
 
-	public void setRemainingPaths(ArrayList<Integer> remainingPaths) {
-		this.remainingPaths = remainingPaths;
+	public void setCurrentMethod(StaticMethod currentMethod) {
+		this.currentMethod = currentMethod;
 	}
 
-
-
-	
 }

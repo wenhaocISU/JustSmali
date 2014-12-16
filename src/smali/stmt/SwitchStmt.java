@@ -53,8 +53,8 @@ public class SwitchStmt extends StaticStmt{
 		this.pSwitchInitValue = pSwitchInitValue;
 	}
 	
-	public Map<Condition, Integer> getSwitchMap(StaticMethod m) {
-		Map<Condition, Integer> result = new HashMap<Condition, Integer>();
+	public Map<Integer, Condition> getSwitchMap(StaticMethod m) {
+		Map<Integer, Condition> result = new HashMap<Integer, Condition>();
 		for (Map.Entry<String, String> entry : switchMap.entrySet()) {
 			String value = entry.getKey();
 			if (!value.startsWith("#"))
@@ -73,7 +73,7 @@ public class SwitchStmt extends StaticStmt{
 				cond.setRight(o.getRight());
 			}
 			int targetLineNumber = m.getFirstLineNumberOfBlock(targetLabel);
-			result.put(cond, targetLineNumber);
+			result.put(targetLineNumber, cond);
 		}
 		return result;
 	}

@@ -2,6 +2,7 @@ package concolic;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 
 import smali.stmt.FieldStmt;
 import smali.stmt.IfStmt;
@@ -21,6 +22,7 @@ public class Execution {
 	private StaticApp staticApp;
 	private String pkgName;
 	private StaticMethod eventHandlerMethod;
+	private ArrayList<PSToBeContinued> PSTBCList = new ArrayList<PSToBeContinued>();
 	private ArrayList<String> seq = new ArrayList<String>();
 	private Adb adb;
 	private Jdb jdb;
@@ -96,10 +98,36 @@ public class Execution {
 				System.out.println("[Smali]" + s.getTheStmt());
 				// 0. If last stmt creates path, update path conditions here
 				if (newPathCondition) {
-					if (lastPathStmt instanceof IfStmt && newHitLine!= nextPossibleLineFromIfStmt) {
+					ArrayList<Integer> remainingPaths = new ArrayList<Integer>();
+					if (lastPathStmt instanceof IfStmt) {
+						// nextPossibleLine = the jump target
+						// if !=, then didn't jump; the PSTBC should use nextPossibleLine
+						// else, jumped; the PSTBC should use the natural following line.
+						if (newHitLine!= nextPossibleLineFromIfStmt) {
 						Condition lastCond = pathCondition.get(pathCondition.size()-1);
 						lastCond.reverseCondition();
 						pathCondition.set(pathCondition.size()-1, lastCond);
+						remainingPaths.add(nextPossibleLineFromIfStmt);
+						System.out.println("[DIDNT JUMP, WENT TO " + newHitLine + ", ADDING " + nextPossibleLineFromIfStmt);
+						}
+						else {
+							int lastStmtIndex = m.getSmaliStmts().indexOf(lastPathStmt);
+							if (lastStmtIndex < 0)	throw (new Exception("some thing wrong with finding the neighbor stmt of IfStmt"));
+							StaticStmt followingStmt = m.getSmaliStmts().get(lastStmtIndex+1);
+							remainingPaths.add(followingStmt.getSourceLineNumber());
+							System.out.println("[JUMPED, WENT TO " + newHitLine + ", ADDING " + followingStmt.getSourceLineNumber());
+						}
+					}
+					else if (lastPathStmt instanceof SwitchStmt) {
+						SwitchStmt sS = (SwitchStmt) lastPathStmt;
+						Map<Integer, Condition> switchMap = sS.getSwitchMap(m);
+						if (!switchMap.containsKey(newHitLine))  throw (new Exception("Something wrong with the switch stmt path condition"));
+						Condition newCond = switchMap.get(newHitLine);
+						pathCondition.add(newCond);
+						for (int lineNumber : switchMap.keySet()) {
+							if (lineNumber != newHitLine)
+								remainingPaths.add(lineNumber);
+						}
 					}
 					newPathCondition = false;
 					lastPathStmt = new StaticStmt();
@@ -141,15 +169,11 @@ public class Execution {
 				// 3. Updates Path Condition?
 				else if (s.updatesPathCondition()) {
 					lastPathStmt = s;
+					newPathCondition = true;
 					if (s instanceof IfStmt) {
 						System.out.println("[Action]Updates PathCondition");
 						updatePathCondition(pathCondition, ((IfStmt) s).getCondition(), symbolicStates);
-						newPathCondition = true;
 						nextPossibleLineFromIfStmt = m.getFirstLineNumberOfBlock(((IfStmt) s).getTargetLabel());
-					}
-					else {
-						SwitchStmt sS = (SwitchStmt) s;
-						
 					}
 				}
 				// 4. Invokes Method?
