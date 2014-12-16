@@ -2,6 +2,7 @@ package concolic;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import smali.stmt.FieldStmt;
@@ -51,6 +52,7 @@ public class Execution {
 			PathSummary pS_0 = new PathSummary();
 			pS_0.setSymbolicStates(initSymbolicStates(eventHandlerMethod));
 			pS_0 = concreteExecution(pS_0, eventHandlerMethod, false);
+			System.out.println("\nNumber of PSTBC: " + PSTBCList.size());
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 	
@@ -89,7 +91,6 @@ public class Execution {
 				String mN = methodInfo.substring(methodInfo.lastIndexOf(".")+1).replace("(", "").replace(")", "");
 				String lineInfo = jdbNewLine.split(", ")[2];
 				int newHitLine = Integer.parseInt(lineInfo.substring(lineInfo.indexOf("=")+1, lineInfo.indexOf(" ")));
-				pS.addExecutionLog(cN + ":" + newHitLine);
 				StaticClass c = staticApp.findClassByJavaName(cN);
 				if (c == null)	continue;
 				if (!m.getName().equals(mN))	 {System.out.print(m.getName() + " " + mN + " ");System.out.println("NOPE");continue;}
@@ -129,10 +130,15 @@ public class Execution {
 								remainingPaths.add(lineNumber);
 						}
 					}
-					pS.getExecutionLog();
+					PathSummary croppedPS = pS.clone();
+					for (int remainingLine : remainingPaths) {
+						PSToBeContinued newPSTBC = new PSToBeContinued(croppedPS, m, remainingLine);
+						PSTBCList.add(newPSTBC);
+					}
 					newPathCondition = false;
 					lastPathStmt = new StaticStmt();
 				}
+				pS.addExecutionLog(cN + ":" + newHitLine);
 				// 1. Method Ending? (return, throw)
 				if (s.endsMethod()) {
 					if (s instanceof ReturnStmt && !((ReturnStmt) s).returnsVoid()) {
