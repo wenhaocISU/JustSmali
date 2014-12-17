@@ -75,50 +75,31 @@ public class Execution {
 		return symbolicStates;
 	}
 
-	private Operation updateConcreteSymbol(Operation newSymbolO) {
-		
-		Operation result = newSymbolO;
-		String[] parts = result.getRightA().split(">>");
-		if (parts.length == 3) {
-			ArrayList<String> jdbLocals = jdb.getLocals();
-			for (String jL : jdbLocals) {
-				String left = jL.split(" = ")[0];
-				String right = jL.split(" = ")[1];
-				if (left.equals("wenhao" + parts[2])) {
-					parts[2] = right.replace("(", "<").replace(")", ">").replace("instance of ", "");
-					break;
-				}
-			}
-			result.setRightA(parts[0] + ">>" + parts[1] + ">>" + parts[2]);
-		}
-		return result;
-	}
+
 
 	private void preparation() throws Exception{
-		
-		//adb.rebootDevice();
-		//System.out.print("Waiting for device to reboot...  ");
-		//Thread.sleep(30000);
-		//System.out.println("OK.");
+		System.out.print("\nReinstalling App...  ");
 		adb.uninstallApp(staticApp.getPackageName());
 		adb.installApp(staticApp.getSignedAppPath());
-		//adb.unlockScreen();
+		System.out.println("Done. Starting App.");
 		adb.startApp(pkgName, staticApp.getMainActivity().getJavaName());
 		
-		System.out.println("\nInitiating jdb..");
+		System.out.print("\nInitiating jdb...  ");
 		jdb.init(pkgName);
+		System.out.println("Done.");
 		
+		System.out.print("\nGoing to target Layout...  ");
 		for (int i = 0, len = seq.size()-1; i < len; i++) {
 			adb.click(seq.get(i));
 			Thread.sleep(300);
 		}
+		System.out.println("Done.");
 		
 		for (int i : eventHandlerMethod.getSourceLineNumbers()) {
 			jdb.setBreakPointAtLine(eventHandlerMethod.getDeclaringClass(staticApp).getJavaName(), i);
 		}
 		
-		//while (!jdb.readLine().equals("TIMEOUT"));
-		
+		System.out.println("\nStarting Concrete Execution.");
 	}
 	
 	public PathSummary concreteExecution(PathSummary pS, StaticMethod m) throws Exception {
@@ -283,6 +264,25 @@ public class Execution {
 		for (String pC : pS.getPathChoices())
 			System.out.println("  " + pC);
 		System.out.println("========================");
+	}
+	
+	private Operation updateConcreteSymbol(Operation newSymbolO) {
+		
+		Operation result = newSymbolO;
+		String[] parts = result.getRightA().split(">>");
+		if (parts.length == 3) {
+			ArrayList<String> jdbLocals = jdb.getLocals();
+			for (String jL : jdbLocals) {
+				String left = jL.split(" = ")[0];
+				String right = jL.split(" = ")[1];
+				if (left.equals("wenhao" + parts[2])) {
+					parts[2] = right.replace("(", "<").replace(")", ">").replace("instance of ", "");
+					break;
+				}
+			}
+			result.setRightA(parts[0] + ">>" + parts[1] + ">>" + parts[2]);
+		}
+		return result;
 	}
 	
 
