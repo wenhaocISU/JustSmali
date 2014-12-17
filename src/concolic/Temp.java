@@ -1,6 +1,7 @@
 package concolic;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 
 import smali.stmt.IfStmt;
@@ -140,9 +141,29 @@ public class Temp {
 	}
 	
 
-	private PathSummary trimPSForInvoke(PathSummary pS, String params) {
-		// TODO Auto-generated method stub
-		return null;
+	private PathSummary trimPSForInvoke(PathSummary pS, String unparsedParams) {
+		PathSummary trimmedPS = pS.clone();
+		ArrayList<String> params = new ArrayList<String>();
+		if (!unparsedParams.contains(", "))
+			params.add(unparsedParams);
+		else params = (ArrayList<String>) Arrays.asList(unparsedParams.split(", "));
+		int paramIndex = 0;
+		ArrayList<Operation> trimmedSymbolicStates = new ArrayList<Operation>();
+		for (Operation o : pS.getSymbolicStates()) {
+			// 1. left.endwith $Fstatic
+			// 2. left = parameter
+			if (params.contains(o.getLeft())) {
+				Operation newO = o.clone();
+				newO.setLeft("p" + paramIndex++);
+				params.remove(o.getLeft());
+				trimmedSymbolicStates.add(newO);
+			}
+			else if (o.getLeft().contains("$Fstatic")) {
+				trimmedSymbolicStates.add(o);
+			}
+		}
+		trimmedPS.setSymbolicStates(trimmedSymbolicStates);
+		return trimmedPS;
 	}
 
 

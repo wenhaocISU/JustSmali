@@ -97,6 +97,8 @@ public class PathSummary implements Serializable{
 			throw (new Exception("Can't find the assignment of returned variable from symbolicStates"));
 		Operation theAssignO = this.symbolicStates.get(index);
 		theAssignO.setLeft("$newestInvokeResult");
+		if (this.symbolicStates.get(index).getLeft().equals("$newestInvokeResult"))
+			System.out.println("[Good News in updateReturnSymbol, can delete the set(index, theAssignO)]");
 		this.symbolicStates.set(index, theAssignO);
 		if (theAssignO.isNoOp()) {
 			for (int i = index+1; i < this.symbolicStates.size(); i++) {
@@ -113,26 +115,84 @@ public class PathSummary implements Serializable{
 	}
 	
 	public void updateSymbolicStates(Operation newO, boolean newSymbol) {
+		// only 4 possible scenarios:
+		// 1. vi = vm op vn
+		// 2. vi = $newestInvokeResult
+		// 3. vi = $Finstance>>..>>vm
+		// 4. vi = $Fstatic>>... (this one no need to replace anything)
 		int index = getIndexOfOperationWithLeft(newO.getLeft());
-		boolean ADone = false, BDone = false;
-		String rightA = newO.getRightA(), rightB = newO.getRightB();
-		if (rightA.equals("$newestInvokeResult") || rightA.startsWith("#"))
-			ADone = true;
-		if (rightA.equals("$newestInvokeResult") || newO.isNoOp() || rightB.startsWith("#"))
-			BDone = true;
-		for (Operation o : this.symbolicStates) {
-			//if (!ADone)
+		// scenario 1
+		if (!newSymbol) {
+			boolean ADone = false, BDone = false;
+			if (newO.getRightA().startsWith("#"))	ADone = true;
+			if (newO.isNoOp() || newO.getRightB().startsWith("#"))	BDone = true;
+			for (Operation o : this.symbolicStates) {
+				if (!ADone && o.getLeft().equals(newO.getRightA())) {
+					newO.setRightA(o.getRight());
+					ADone = true;
+				}
+				if (!BDone && o.getLeft().equals(newO.getRightB())) {
+					newO.setRightB(o.getRight());
+					BDone = true;
+				}
+				if (ADone && BDone)
+					break;
+			}
+			if (index > -1)
+				this.symbolicStates.remove(index);
+			this.symbolicStates.add(newO);
 		}
-		//TODO if (newSymbol):
-		//			if ($Fstatic), no action needed.
-		//			if ($Finstance), replace right most object if can
-		//			if ($newestInvokeResult), 
-		
-		//TODO if index >= 0, replace operation;
+		// scenario 2
+		else if (newO.getRightA().equals("$newestInvokeResult")){
+			int assignOIndex = getIndexOfOperationWithLeft("$newestInvokeResult");
+			Operation assignO = this.symbolicStates.get(assignOIndex);
+			assignO.setLeft(newO.getLeft());
+			if (this.symbolicStates.get(assignOIndex).getLeft().equals(newO.getLeft()))
+				System.out.println("[Good News in updateSymbolicStates, can delete assignOIndex]");
+			this.symbolicStates.set(assignOIndex, assignO);
+			if (!assignO.isNoOp())
+				for (int i = assignOIndex+1; i < this.symbolicStates.size(); i++) {
+					Operation o = this.symbolicStates.get(i);
+					if (o.getLeft().contains("$newestInvokeResult")) {
+						o.setLeft(o.getLeft().replace("$newestInvokeResult", assignO.getRightA()));
+						if (this.getSymbolicStates().get(i).getLeft().equals(o.getLeft()))
+							System.out.println("Good News can delete set i o");
+						this.symbolicStates.set(i, o);
+					}
+				}
+		}
+		// scenario 3 & 4
+		else{
+			if (newO.getRightA().startsWith("$Finstance")) {
+				String prefix = newO.getRightA().substring(0, newO.getRightA().lastIndexOf(">>")+2);
+				String objectName = newO.getRightA().substring(newO.getRightA().lastIndexOf(">>")+2);
+				for (Operation o : this.symbolicStates) {
+					if (o.getLeft().equals(objectName)) {
+						newO.setRightA(prefix + o.getRight());
+						break;
+					}
+				}
+			}
+			if (index > -1)
+				this.symbolicStates.remove(index);
+			this.symbolicStates.add(newO);
+		}
 	}
 	
 	public void mergeWithInvokedPS(PathSummary subPS) {
-		
+		this.executionLog = subPS.getExecutionLog();
+		this.pathChoices = subPS.getPathChoices();
+		this.pathCondition = subPS.getPathCondition();
+		for (Operation o : subPS.getSymbolicStates()) {
+			if (o.getLeft().contains("$newestInvokeResult"))
+				this.symbolicStates.add(o);
+			else if (o.getLeft().contains("$Fstatic")){
+				int index = getIndexOfOperationWithLeft(o.getLeft());
+				if (index > -1)
+					this.symbolicStates.remove(index);
+				this.symbolicStates.add(o);
+			}
+		}
 	}
 	
 	private int getIndexOfOperationWithLeft(String vName) {

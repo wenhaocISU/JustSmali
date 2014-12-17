@@ -73,4 +73,13 @@ public class Operation implements Serializable{
 		return "(" + op + " " + rightA + " " + rightB + " )";
 	}
 
+	public Operation clone() {
+		Operation result = new Operation();
+		result.setLeft(this.left);
+		result.setNoOp(this.noOp);
+		result.setRightA(this.rightA);
+		result.setRightB(this.rightB);
+		return result;
+	}
+	
 }
