@@ -98,15 +98,16 @@ public class PathSummary implements Serializable{
 		Operation theAssignO = this.symbolicStates.get(index);
 		theAssignO.setLeft("$newestInvokeResult");
 		this.symbolicStates.set(index, theAssignO);
-		for (int i = index+1; i < this.symbolicStates.size(); i++) {
-			Operation o = this.symbolicStates.get(i);
-			//TODO do I want to add parenthesis to noOp operation's right?
-			if (o.getLeft().contains(theAssignO.getRightA())) {
-				String newLeft = o.getLeft().replace(theAssignO.getRightA(), "$newestInvokeResult");
-				o.setLeft(newLeft);
-				if (o.getLeft().equals(this.symbolicStates.get(i).getLeft()))
-					System.out.println("Good News in updateReturnSymbol. Can delete the set(i, o)");
-				this.symbolicStates.set(i, o);
+		if (theAssignO.isNoOp()) {
+			for (int i = index+1; i < this.symbolicStates.size(); i++) {
+				Operation o = this.symbolicStates.get(i);
+				if (o.getLeft().endsWith(theAssignO.getRightA())) {
+					String newLeft = o.getLeft().replace(theAssignO.getRightA(), "$newestInvokeResult");
+					o.setLeft(newLeft);
+					if (o.getLeft().equals(this.symbolicStates.get(i).getLeft()))
+						System.out.println("Good News in updateReturnSymbol. Can delete the set(i, o)");
+					this.symbolicStates.set(i, o);
+				}
 			}
 		}
 	}
@@ -115,6 +116,15 @@ public class PathSummary implements Serializable{
 		int index = getIndexOfOperationWithLeft(newO.getLeft());
 		//TODO replace rightA (exclude # and $newestInvokeResult)
 		//TODO if there is rightB, replace rightB (exclude # and $newestInvokeResult)
+		boolean ADone = false, BDone = false;
+		String rightA = newO.getRightA(), rightB = newO.getRightB();
+		if (rightA.equals("$newestInvokeResult") || rightA.startsWith("#"))
+			ADone = true;
+		if (rightA.equals("$newestInvokeResult") || newO.isNoOp() || rightB.startsWith("#"))
+			BDone = true;
+		for (Operation o : this.symbolicStates) {
+			//if (!ADone)
+		}
 		//TODO if (newSymbol):
 		//			if ($Fstatic), no action needed.
 		//			if ($Finstance), replace right most object if can

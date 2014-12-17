@@ -265,7 +265,7 @@ public class Parser {
 			s.setIsGet(StmtFormat.isGetField(line));
 			s.setIsPut(StmtFormat.isPutField(line));
 			s.setGeneratesSymbol(s.isGet());
-			s.setHasOperation(s.isPut());
+			s.setHasOperation(true);
 			String arguments[] = line.substring(line.indexOf(" ")+1).split(", ");
 			s.setvA(arguments[0]);
 			s.setvB(arguments[1]);
@@ -274,15 +274,21 @@ public class Parser {
 			String fieldSig = s.getvC();
 			if (s.isStatic())	fieldSig = s.getvB();
 			s.setFieldSig(fieldSig);
-			if (s.hasOperation()) {
-				Operation o = new Operation();
-				o.setNoOp(true);
+			Operation o = new Operation();
+			o.setNoOp(true);
+			if (s.isPut()) {
 				if (s.isStatic())
 					o.setLeft("$Fstatic>>" + s.getFieldSig());
 				else o.setLeft("$Finstance>>" + s.getFieldSig() + ">>" + s.getObject());
 				o.setRightA(s.getSrcV());
-				s.setOperation(o);
 			}
+			else {
+				o.setLeft(s.getDestV());
+				if (s.isStatic())
+					o.setRightA("Fstatic>>" + s.getFieldSig());
+				else o.setRightA("Finstance>>" + s.getFieldSig() + ">>" + s.getObject());
+			}
+			s.setOperation(o);
 			String tgtCN = fieldSig.split("->")[0];
 			String fSubSig = fieldSig.split("->")[1];
 			StaticClass tgtC = staticApp.findClassByDexName(tgtCN);
@@ -348,6 +354,10 @@ public class Parser {
 				if (lastS instanceof InvokeStmt) {
 					((InvokeStmt) lastS).setResultsMoved(true);
 					s.setGeneratesSymbol(true);
+					Operation o = new Operation();
+					o.setLeft(s.getvA());
+					o.setNoOp(true);
+					o.setRightA("$newestInvokeResult");
 					s.setResultMovedFrom(m.getSmaliStmts().size()-1);
 				}
 				else if (lastS instanceof NewStmt) {

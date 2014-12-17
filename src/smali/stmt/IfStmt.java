@@ -57,15 +57,14 @@ public class IfStmt extends StaticStmt{
 	}
 	
 	public int getJumpTargetLineNumber(StaticMethod m) {
-		int result = -1;
-		
-		return result;
+		return m.getFirstLineNumberOfBlock(getTargetLabel());
 	}
 	
 	public int getFlowThroughTargetLineNumber(StaticMethod m) {
-		int result = -1;
-		
-		return result;
+		int stmtID = m.getSmaliStmts().indexOf(this);
+		if (stmtID == -1)
+			return -1;
+		return m.getSmaliStmts().get(stmtID+1).getSourceLineNumber();
 	}
 	
 }

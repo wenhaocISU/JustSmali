@@ -216,6 +216,7 @@ public class Execution {
 					newPathCondition = true;
 					if (s instanceof IfStmt) {
 						System.out.println("[Action]Updates PathCondition");
+						System.out.println("  " + ((IfStmt)s).getJumpTargetLineNumber(m) + " " + ((IfStmt)s).getFlowThroughTargetLineNumber(m));
 						updatePathCondition(pathCondition, ((IfStmt) s).getCondition(), symbolicStates);
 						nextPossibleLineFromIfStmt = m.getFirstLineNumberOfBlock(((IfStmt) s).getTargetLabel());
 					}
