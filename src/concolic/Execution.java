@@ -2,7 +2,6 @@ package concolic;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 import smali.stmt.FieldStmt;
@@ -53,7 +52,35 @@ public class Execution {
 			pS_0.setSymbolicStates(initSymbolicStates(eventHandlerMethod));
 			pS_0 = concreteExecution(pS_0, eventHandlerMethod, false);
 			System.out.println("\nNumber of PSTBC: " + PSTBCList.size());
+			System.out.println("Number of path choices: " + pS_0.getPathChoices().size());
+			for (String pC : pS_0.getPathChoices())
+				System.out.println("  " + pC);
+			symbolicallyFinishingUp();
+			jdb.exit();
 		}	catch (Exception e) {e.printStackTrace();}
+	}
+	
+	private void symbolicallyFinishingUp() {
+		while (true) {
+			PSToBeContinued pSTBC = PSTBCList.get(PSTBCList.size()-1);
+			PSTBCList.remove(PSTBCList.size()-1);
+			int firstMove = pSTBC.getNextStepLineNumber();
+			PathSummary pS = pSTBC.getPathSummary();
+			StaticMethod m = pSTBC.getCurrentMethod();
+			
+			symbolicExecution(pS, firstMove, m);
+			if (PSTBCList.size() == 0)
+				break;
+		}
+	}
+
+	private void symbolicExecution(PathSummary pS, int firstMove, StaticMethod m) {
+		// walk the given first step, then proceed in order
+		// when met: 1.has operation, and 2.generates symbol, same process as concrete
+		// when met: 3.updates path condition. Pick one path and build PSTBC with rest of the paths
+		// when met: 4.invoke method. also do a recursive run
+		// when met: 5.end method. if this is a complete run, then return the PS;
+		// 	if a partial run, then go up 1 level to the invokestmt, find a way to merge the PS, then continue partial run from there.
 	}
 	
 	private ArrayList<Operation> initSymbolicStates(StaticMethod targetM) {
@@ -135,6 +162,16 @@ public class Execution {
 						PSToBeContinued newPSTBC = new PSToBeContinued(croppedPS, m, remainingLine);
 						PSTBCList.add(newPSTBC);
 					}
+					String pathStmtInfo = pS.getExecutionLog().get(pS.getExecutionLog().size()-1);
+					
+					System.out.println("[BEFORE PUTTING]");
+					for (String pC : pS.getPathChoices())
+						System.out.println("  " + pC);
+					System.out.println("[PUTTING]" + pathStmtInfo + " -> " + newHitLine);
+					pS.addPathChoice(pathStmtInfo + "," + newHitLine);
+					System.out.println("[AFTER PUTTING]");
+					for (String pC : pS.getPathChoices())
+						System.out.println("  " + pC);
 					newPathCondition = false;
 					lastPathStmt = new StaticStmt();
 				}
@@ -219,6 +256,7 @@ public class Execution {
 		System.out.println("\n================Finished executing " + m.getSmaliSignature());
 		pS.setPathCondition(pathCondition);
 		pS.setSymbolicStates(symbolicStates);
+		//pS.setPathChoices(pathChoices);
 		System.out.println("\nExecution Log: ");
 		for (String s : pS.getExecutionLog())
 			System.out.println("  " + s);
@@ -228,6 +266,9 @@ public class Execution {
 		System.out.println("\nPathCondition: ");
 		for (Condition cond : pS.getPathCondition())
 			System.out.println("  " + cond.toString());
+		System.out.println("\nPathChoices: ");
+		for (String pC : pS.getPathChoices())
+			System.out.println("  " + pC);
 		System.out.println("===================================================");
 		return pS;
 	}
@@ -261,6 +302,10 @@ public class Execution {
 		// if the root field is static, then save it
 		// if the root field is instance, then save it when it was returned.
 		PathSummary result = subPS.clone();
+		System.out.println("[CLONING SUBPS]");
+		System.out.println(" [result pathChoices]");
+		for (String pC : pS.getPathChoices())
+			System.out.println("  " + pC);
 		ArrayList<Operation> newSS = pS.getSymbolicStates();
 		for (Operation o : subPS.getSymbolicStates()) {
 			if (o.getLeft().contains("$newestInvokeResult"))

@@ -1,5 +1,6 @@
 package smali.stmt;
 
+import staticFamily.StaticMethod;
 import staticFamily.StaticStmt;
 import concolic.Condition;
 
@@ -46,12 +47,24 @@ public class IfStmt extends StaticStmt{
 		else if (op.equals("ge"))		result.setOp(">=");
 		else if (op.equals("gt"))		result.setOp(">");
 		else if (op.equals("le"))		result.setOp("<=");
-		else if (op.equals("eqz"))		{ result.setOp("="); result.setRight("0"); }
-		else if (op.equals("nez"))		{ result.setOp("!="); result.setRight("0"); }
-		else if (op.equals("ltz"))		{ result.setOp("<"); result.setRight("0"); }
-		else if (op.equals("gez"))		{ result.setOp(">="); result.setRight("0"); }
-		else if (op.equals("gtz"))		{ result.setOp(">"); result.setRight("0"); }
-		else if (op.equals("lez"))		{ result.setOp("<="); result.setRight("0"); }
+		else if (op.equals("eqz"))		{ result.setOp("="); result.setRight("#0x0"); }
+		else if (op.equals("nez"))		{ result.setOp("!="); result.setRight("#0x0"); }
+		else if (op.equals("ltz"))		{ result.setOp("<"); result.setRight("#0x0"); }
+		else if (op.equals("gez"))		{ result.setOp(">="); result.setRight("#0x0"); }
+		else if (op.equals("gtz"))		{ result.setOp(">"); result.setRight("#0x0"); }
+		else if (op.equals("lez"))		{ result.setOp("<="); result.setRight("#0x0"); }
+		return result;
+	}
+	
+	public int getJumpTargetLineNumber(StaticMethod m) {
+		int result = -1;
+		
+		return result;
+	}
+	
+	public int getFlowThroughTargetLineNumber(StaticMethod m) {
+		int result = -1;
+		
 		return result;
 	}
 	
