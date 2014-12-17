@@ -358,6 +358,7 @@ public class Parser {
 					o.setLeft(s.getvA());
 					o.setNoOp(true);
 					o.setRightA("$newestInvokeResult");
+					s.setOperation(o);
 					s.setResultMovedFrom(m.getSmaliStmts().size()-1);
 				}
 				else if (lastS instanceof NewStmt) {

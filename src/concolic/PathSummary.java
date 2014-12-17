@@ -114,8 +114,6 @@ public class PathSummary implements Serializable{
 	
 	public void updateSymbolicStates(Operation newO, boolean newSymbol) {
 		int index = getIndexOfOperationWithLeft(newO.getLeft());
-		//TODO replace rightA (exclude # and $newestInvokeResult)
-		//TODO if there is rightB, replace rightB (exclude # and $newestInvokeResult)
 		boolean ADone = false, BDone = false;
 		String rightA = newO.getRightA(), rightB = newO.getRightB();
 		if (rightA.equals("$newestInvokeResult") || rightA.startsWith("#"))
