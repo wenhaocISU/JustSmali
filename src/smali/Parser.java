@@ -265,7 +265,7 @@ public class Parser {
 			s.setIsGet(StmtFormat.isGetField(line));
 			s.setIsPut(StmtFormat.isPutField(line));
 			s.setGeneratesSymbol(s.isGet());
-			s.setHasOperation(true);
+			s.setHasOperation(s.isPut());
 			String arguments[] = line.substring(line.indexOf(" ")+1).split(", ");
 			s.setvA(arguments[0]);
 			s.setvB(arguments[1]);
@@ -285,8 +285,8 @@ public class Parser {
 			else {
 				o.setLeft(s.getDestV());
 				if (s.isStatic())
-					o.setRightA("Fstatic>>" + s.getFieldSig());
-				else o.setRightA("Finstance>>" + s.getFieldSig() + ">>" + s.getObject());
+					o.setRightA("$Fstatic>>" + s.getFieldSig());
+				else o.setRightA("$Finstance>>" + s.getFieldSig() + ">>" + s.getObject());
 			}
 			s.setOperation(o);
 			String tgtCN = fieldSig.split("->")[0];
