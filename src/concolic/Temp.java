@@ -19,7 +19,7 @@ public class Temp {
 	private Jdb jdb = new Jdb();
 	private StaticApp staticApp = new StaticApp();
 	
-	private PathSummary concreteExecution(PathSummary pS, StaticMethod m) throws Exception {
+	public PathSummary concreteExecution1(PathSummary pS, StaticMethod m) throws Exception {
 		
 		System.out.println("\nStarting to Execute " + m.getSmaliSignature());
 		boolean newPathCondition = false; StaticStmt lastPathStmt = new StaticStmt();
@@ -114,7 +114,7 @@ public class Temp {
 							jdb.setBreakPointAtLine(targetC.getJavaName(), i);
 						jdb.cont();
 						PathSummary trimmedPS = trimPSForInvoke(pS, iS.getParams());
-						PathSummary subPS = concreteExecution(trimmedPS, targetM);
+						PathSummary subPS = concreteExecution1(trimmedPS, targetM);
 						pS.mergeWithInvokedPS(subPS);
 					}
 					else if (iS.resultsMoved()) {

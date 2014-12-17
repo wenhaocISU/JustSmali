@@ -4,10 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
-import smali.stmt.FieldStmt;
 import smali.stmt.IfStmt;
 import smali.stmt.InvokeStmt;
-import smali.stmt.MoveStmt;
 import smali.stmt.ReturnStmt;
 import smali.stmt.SwitchStmt;
 import staticFamily.StaticApp;
@@ -50,37 +48,16 @@ public class Execution {
 
 			PathSummary pS_0 = new PathSummary();
 			pS_0.setSymbolicStates(initSymbolicStates(eventHandlerMethod));
-			pS_0 = concreteExecution(pS_0, eventHandlerMethod, false);
+			
+			pS_0 = concreteExecution(pS_0, eventHandlerMethod);
+			
 			System.out.println("\nNumber of PSTBC: " + PSTBCList.size());
 			System.out.println("Number of path choices: " + pS_0.getPathChoices().size());
 			for (String pC : pS_0.getPathChoices())
 				System.out.println("  " + pC);
-			symbolicallyFinishingUp();
+			//symbolicallyFinishingUp();
 			jdb.exit();
 		}	catch (Exception e) {e.printStackTrace();}
-	}
-	
-	private void symbolicallyFinishingUp() {
-		while (true) {
-			PSToBeContinued pSTBC = PSTBCList.get(PSTBCList.size()-1);
-			PSTBCList.remove(PSTBCList.size()-1);
-			int firstMove = pSTBC.getNextStepLineNumber();
-			PathSummary pS = pSTBC.getPathSummary();
-			StaticMethod m = pSTBC.getCurrentMethod();
-			
-			symbolicExecution(pS, firstMove, m);
-			if (PSTBCList.size() == 0)
-				break;
-		}
-	}
-
-	private void symbolicExecution(PathSummary pS, int firstMove, StaticMethod m) {
-		// walk the given first step, then proceed in order
-		// when met: 1.has operation, and 2.generates symbol, same process as concrete
-		// when met: 3.updates path condition. Pick one path and build PSTBC with rest of the paths
-		// when met: 4.invoke method. also do a recursive run
-		// when met: 5.end method. if this is a complete run, then return the PS;
-		// 	if a partial run, then go up 1 level to the invokestmt, find a way to merge the PS, then continue partial run from there.
 	}
 	
 	private ArrayList<Operation> initSymbolicStates(StaticMethod targetM) {
@@ -96,260 +73,6 @@ public class Execution {
 			symbolicStates.add(o);
 		}
 		return symbolicStates;
-	}
-
-	private PathSummary concreteExecution(PathSummary givenPS, StaticMethod m, boolean inAnInvokedMethod) throws Exception{
-		PathSummary pS = givenPS.clone();
-		final ArrayList<Operation> symbolicStates = pS.getSymbolicStates();
-		final ArrayList<Condition> pathCondition = pS.getPathCondition();
-		
-		boolean newPathCondition = false; int nextPossibleLineFromIfStmt = -1; StaticStmt lastPathStmt = new StaticStmt();
-		
-		String jdbNewLine = "";
-		while (!jdbNewLine.equals("TIMEOUT")) {
-			if (!jdbNewLine.equals(""))
-				System.out.println("\n[J]" + jdbNewLine);
-			if (jdbNewLine.startsWith("Breakpoint hit: ")) {
-				String trimming = jdb.readLine();
-				while (!trimming.equals("TIMEOUT"))
-					trimming = jdb.readLine();
-				String methodInfo = jdbNewLine.split(", ")[1];
-				String cN = methodInfo.substring(0, methodInfo.lastIndexOf("."));
-				String mN = methodInfo.substring(methodInfo.lastIndexOf(".")+1).replace("(", "").replace(")", "");
-				String lineInfo = jdbNewLine.split(", ")[2];
-				int newHitLine = Integer.parseInt(lineInfo.substring(lineInfo.indexOf("=")+1, lineInfo.indexOf(" ")));
-				StaticClass c = staticApp.findClassByJavaName(cN);
-				if (c == null)	continue;
-				if (!m.getName().equals(mN))	 {System.out.print(m.getName() + " " + mN + " ");System.out.println("NOPE");continue;}
-				StaticStmt s = m.getStmtByLineNumber(newHitLine);
-				if (s == null)	continue;
-				System.out.println("[Smali]" + s.getTheStmt());
-				// 0. If last stmt creates path, update path conditions here
-				if (newPathCondition) {
-					ArrayList<Integer> remainingPaths = new ArrayList<Integer>();
-					if (lastPathStmt instanceof IfStmt) {
-						// nextPossibleLine = the jump target
-						// if !=, then didn't jump; the PSTBC should use nextPossibleLine
-						// else, jumped; the PSTBC should use the natural following line.
-						if (newHitLine!= nextPossibleLineFromIfStmt) {
-						Condition lastCond = pathCondition.get(pathCondition.size()-1);
-						lastCond.reverseCondition();
-						pathCondition.set(pathCondition.size()-1, lastCond);
-						remainingPaths.add(nextPossibleLineFromIfStmt);
-						System.out.println("[DIDNT JUMP, WENT TO " + newHitLine + ", ADDING " + nextPossibleLineFromIfStmt);
-						}
-						else {
-							int lastStmtIndex = m.getSmaliStmts().indexOf(lastPathStmt);
-							if (lastStmtIndex < 0)	throw (new Exception("some thing wrong with finding the neighbor stmt of IfStmt"));
-							StaticStmt followingStmt = m.getSmaliStmts().get(lastStmtIndex+1);
-							remainingPaths.add(followingStmt.getSourceLineNumber());
-							System.out.println("[JUMPED, WENT TO " + newHitLine + ", ADDING " + followingStmt.getSourceLineNumber());
-						}
-					}
-					else if (lastPathStmt instanceof SwitchStmt) {
-						SwitchStmt sS = (SwitchStmt) lastPathStmt;
-						Map<Integer, Condition> switchMap = sS.getSwitchMap(m);
-						if (!switchMap.containsKey(newHitLine))  throw (new Exception("Something wrong with the switch stmt path condition"));
-						Condition newCond = switchMap.get(newHitLine);
-						pathCondition.add(newCond);
-						for (int lineNumber : switchMap.keySet()) {
-							if (lineNumber != newHitLine)
-								remainingPaths.add(lineNumber);
-						}
-					}
-					PathSummary croppedPS = pS.clone();
-					for (int remainingLine : remainingPaths) {
-						PSToBeContinued newPSTBC = new PSToBeContinued(croppedPS, m, remainingLine);
-						PSTBCList.add(newPSTBC);
-					}
-					String pathStmtInfo = pS.getExecutionLog().get(pS.getExecutionLog().size()-1);
-					
-					System.out.println("[BEFORE PUTTING]");
-					for (String pC : pS.getPathChoices())
-						System.out.println("  " + pC);
-					System.out.println("[PUTTING]" + pathStmtInfo + " -> " + newHitLine);
-					pS.addPathChoice(pathStmtInfo + "," + newHitLine);
-					System.out.println("[AFTER PUTTING]");
-					for (String pC : pS.getPathChoices())
-						System.out.println("  " + pC);
-					newPathCondition = false;
-					lastPathStmt = new StaticStmt();
-				}
-				pS.addExecutionLog(cN + ":" + newHitLine);
-				// 1. Method Ending? (return, throw)
-				if (s.endsMethod()) {
-					if (s instanceof ReturnStmt && !((ReturnStmt) s).returnsVoid()) {
-						System.out.println("[Action]RETURNING " + s.getvA());
-						addReturnIntoSymbolicStates(symbolicStates, ((ReturnStmt) s));
-					}
-					else {
-						System.out.println("[Action]RETURN VOID OR THROWING");
-					}
-					break;
-				}
-				// 1. Generates Symbol? (GetField, MoveResultFromInvoke)
-				if (s.generatesSymbol()) {
-					System.out.println("[Action]Generates Symbol");
-/*					System.out.println("-old symbolic states");
-					for (Operation ss : symbolicStates)
-						System.out.println(" " + ss.toString());*/
-					Operation o = generateNewSymbolOperation(m, s);
-					updateSymbolicStates(symbolicStates, o, true);
-/*					System.out.println("-new symbolic states");
-					for (Operation ss : symbolicStates)
-						System.out.println(" " + ss.toString());*/
-				}
-				// 2. Has Operation?
-				else if (s.hasOperation()) {
-					System.out.println("[Action]Has Operation");
-/*					System.out.println("-old symbolic states");
-					for (Operation ss : symbolicStates)
-						System.out.println(" " + ss.toString());*/
-					updateSymbolicStates(symbolicStates, s.getOperation(), false);
-/*					System.out.println("-new symbolic states");
-					for (Operation ss : symbolicStates)
-						System.out.println(" " + ss.toString());*/
-				}
-				// 3. Updates Path Condition?
-				else if (s.updatesPathCondition()) {
-					lastPathStmt = s;
-					newPathCondition = true;
-					if (s instanceof IfStmt) {
-						System.out.println("[Action]Updates PathCondition");
-						System.out.println("  " + ((IfStmt)s).getJumpTargetLineNumber(m) + " " + ((IfStmt)s).getFlowThroughTargetLineNumber(m));
-						updatePathCondition(pathCondition, ((IfStmt) s).getCondition(), symbolicStates);
-						nextPossibleLineFromIfStmt = m.getFirstLineNumberOfBlock(((IfStmt) s).getTargetLabel());
-					}
-				}
-				// 4. Invokes Method?
-				else if (s instanceof InvokeStmt) {
-					InvokeStmt iS = (InvokeStmt) s;
-					StaticMethod targetM = staticApp.findMethod(iS.getTargetSig());
-					StaticClass targetC = staticApp.findClassByDexName(iS.getTargetSig().split("->")[0]);
-					if (targetM != null && targetC != null) {
-						for (int i : targetM.getSourceLineNumbers())
-							jdb.setBreakPointAtLine(targetC.getJavaName(), i);
-						jdb.cont();
-						System.out.println("[Action]Invokes Method " + targetM.getSmaliSignature());
-						PathSummary subPS = concreteExecution(trimPSBeforeMethodInvoke(pS, iS.getParams()), targetM, true);
-						// merge new PS into old one
-						// just replace exec log and path condition
-						// only add in the useful operations
-						pS = mergePSAfterMethodInvoke(pS, subPS, iS.resultsMoved());
-						
-						System.out.println("[TEMP]Finished Executing " + targetM.getName());
-					}
-					else if (iS.resultsMoved()){
-						Operation temp = new Operation();
-						temp.setLeft("$newestInvokeResult");
-						temp.setNoOp(true);
-						temp.setRightA("$" + s.getTheStmt());
-						symbolicStates.add(temp);
-					}
-				}
-				jdb.cont();
-			}
-			jdbNewLine = jdb.readLine();
-			if (jdbNewLine == null)
-				System.out.println("Jdb crashed.");
-			Thread.sleep(100);
-		}
-		System.out.println("\n================Finished executing " + m.getSmaliSignature());
-		pS.setPathCondition(pathCondition);
-		pS.setSymbolicStates(symbolicStates);
-		//pS.setPathChoices(pathChoices);
-		System.out.println("\nExecution Log: ");
-		for (String s : pS.getExecutionLog())
-			System.out.println("  " + s);
-		System.out.println("\nSymbolic States: ");
-		for (Operation o : pS.getSymbolicStates())
-			System.out.println("  " + o.toString());
-		System.out.println("\nPathCondition: ");
-		for (Condition cond : pS.getPathCondition())
-			System.out.println("  " + cond.toString());
-		System.out.println("\nPathChoices: ");
-		for (String pC : pS.getPathChoices())
-			System.out.println("  " + pC);
-		System.out.println("===================================================");
-		return pS;
-	}
-	
-	private void addReturnIntoSymbolicStates(ArrayList<Operation> symbolicStates, ReturnStmt returnStmt) {
-		int index = -1;
-		for (int i = 0; i < symbolicStates.size(); i++) {
-			Operation o  = symbolicStates.get(i);
-			if (o.getLeft().equals(returnStmt.getvA())) {
-				index = i;
-				break;
-			}
-		}
-		Operation oldO = symbolicStates.get(index++);
-		oldO.setLeft("$newestInvokeResult");
-		symbolicStates.set(index-1, oldO);
-		String theStuff = oldO.getRight();
-		while (index < symbolicStates.size()) {
-			oldO = symbolicStates.get(index++);
-			// change the first definition operation
-			if (oldO.getLeft().contains(theStuff)) {
-				String newLeft = oldO.getLeft().replace(theStuff, "$newestInvokeResult");
-				oldO.setLeft(newLeft);
-				symbolicStates.set(index-1, oldO);
-			}
-			// change the field opeations that comes from the return variable
-		}
-	}
-
-	private PathSummary mergePSAfterMethodInvoke(PathSummary pS, PathSummary subPS, boolean resultsMoved) {
-		// if the root field is static, then save it
-		// if the root field is instance, then save it when it was returned.
-		PathSummary result = subPS.clone();
-		System.out.println("[CLONING SUBPS]");
-		System.out.println(" [result pathChoices]");
-		for (String pC : pS.getPathChoices())
-			System.out.println("  " + pC);
-		ArrayList<Operation> newSS = pS.getSymbolicStates();
-		for (Operation o : subPS.getSymbolicStates()) {
-			if (o.getLeft().contains("$newestInvokeResult"))
-				newSS.add(o);
-			else if (o.getLeft().contains("$Fstatic"))
-				newSS.add(o);
-		}
-		result.setSymbolicStates(newSS);
-		return result;
-	}
-
-	private PathSummary trimPSBeforeMethodInvoke(PathSummary pS, String params) {
-		PathSummary result = pS.clone();
-		ArrayList<String> parameters = new ArrayList<String>();
-		if (!params.contains(", "))
-			parameters.add(params);
-		else parameters = (ArrayList<String>) Arrays.asList(params.split(", "));
-/*		System.out.print("[PARAMS " + parameters.size() + "] " );
-		for (String s : parameters)	System.out.print(s + " ");
-		System.out.print("\n");*/
-		int paramIndex = 0;
-/*		System.out.println("-Symbolic States Before Trimming");
-		for (Operation ss : pS.getSymbolicStates())
-			System.out.println(" " + ss.toString());*/
-		ArrayList<Operation> trimmedStates = new ArrayList<Operation>();
-		for (String pi : parameters) {
-			for (Operation o : result.getSymbolicStates()) {
-				if (o.getLeft().equals(pi)) {
-					Operation newO = new Operation();
-					newO.setLeft("p" + paramIndex++);
-					newO.setNoOp(true);
-					newO.setRightA(o.getRight());
-					trimmedStates.add(newO);
-					break;
-				}
-			}
-		}
-		result.setSymbolicStates(trimmedStates);
-/*		System.out.println("-Symbolic States After Trimming");
-		for (Operation ss : result.getSymbolicStates())
-			System.out.println(" " + ss.toString());*/
-		//try { Thread.sleep(100000); } catch (InterruptedException e) { e.printStackTrace(); }
-		return result;
 	}
 
 	private Operation updateConcreteSymbol(Operation newSymbolO) {
@@ -369,150 +92,6 @@ public class Execution {
 			result.setRightA(parts[0] + ">>" + parts[1] + ">>" + parts[2]);
 		}
 		return result;
-	}
-
-	private void updatePathCondition(ArrayList<Condition> pathCondition,
-			Condition condition, ArrayList<Operation> symbolicRelations) {
-		boolean leftDone = false, rightDone = false;
-		if (condition.getRight().equals("0"))
-			rightDone = true;
-		for (Operation o : symbolicRelations) {
-			if (o.getLeft().equals(condition.getLeft()) && !leftDone) {
-				String newExpr = o.getRight();
-				condition.setLeft(newExpr);
-				leftDone = true;
-			}
-			else if (o.getLeft().equals(condition.getRight()) && !rightDone) {
-				String newExpr = o.getRight();
-				condition.setRight(newExpr);
-				rightDone = true;
-			}
-			if (leftDone && rightDone)
-				break;
-		}
-		pathCondition.add(condition);
-	}
-
-	private Operation generateNewSymbolOperation(StaticMethod m, StaticStmt s) {
-		Operation o = new Operation();
-		if (!s.generatesSymbol())
-			return o;
-		o.setNoOp(true);
-		o.setLeft(s.getvA());
-		if (s instanceof FieldStmt) {
-			if (((FieldStmt) s).isStatic())
-				o.setRightA("$Fstatic>>" + ((FieldStmt) s).getFieldSig());
-			else {
-				String objectName = ((FieldStmt) s).getObject();
-			// trying not using jdb locals
-			/*	ArrayList<String> jdbLocals = jdb.getLocals();
-				for (String jL : jdbLocals) {
-					String left = jL.split(" = ")[0];
-					String right = jL.split(" = ")[1];
-					if (left.equals("wenhao" + objectName)) {
-						objectName = right.replace("(", "<").replace(")", ">").replace("instance of ", "");
-						break;
-					}
-				}*/
-				o.setRightA("$Finstance>>" + ((FieldStmt) s).getFieldSig() + ">>" + objectName);
-			}
-		}
-		else if (s instanceof MoveStmt) {
-			o.setRightA("$newestInvokeResult");
-		}
-		return o;
-	}
-
-	private void updateSymbolicStates(ArrayList<Operation> symbolicStates, Operation newO, boolean newSymbol) {
-		System.out.println(" -raw " + newO.toString());
-		int index = -1;
-		for (int i = 0, len = symbolicStates.size(); i < len; i++) {
-			if (symbolicStates.get(i).getLeft().equals(newO.getLeft())) {
-				index = i;
-				break;
-			}
-		}
-		String rightA = newO.getRightA();
-		if (!rightA.equals("$newestInvokeResult") && !rightA.startsWith("#")) {
-			for (Operation oldO : symbolicStates) {
-				if (oldO.getLeft().equals(rightA)) {
-					String relation = oldO.getRight();
-					newO.setRightA(relation);
-					break;
-				}
-			}
-		}
-		if (!rightA.equals("$newestInvokeResult") && !newO.isNoOp() && !newO.getRightB().startsWith("#")) {
-			for (Operation oldO : symbolicStates) {
-				if (oldO.getLeft().equals(newO.getRightB())) {
-					String relation = oldO.getRight();
-					newO.setRightB(relation);
-					break;
-				}
-			}
-		}
-		boolean needToAdd = true;
-		if (newSymbol) {
-			System.out.println("[CHECK]" + newO.toString());
-			rightA = newO.getRightA();
-			if (rightA.equals("$newestInvokeResult")) {
-				needToAdd = false;
-/*				Operation newliestAddedOperation = symbolicStates.get(symbolicStates.size()-1);
-				if (newliestAddedOperation.getLeft().equals("$newestInvokeResult")) {
-					newO.setRightA(newliestAddedOperation.getRightA());
-					System.out.println(" -deleting temp " + newliestAddedOperation.toString());
-					symbolicStates.remove(newliestAddedOperation);
-					
-				}*/
-				ArrayList<Operation> nonRelated = new ArrayList<Operation>();
-				ArrayList<Operation> related = new ArrayList<Operation>();
-				for (Operation oldO : symbolicStates) {
-					if (!oldO.getLeft().contains("$newestInvokeResult"))
-						nonRelated.add(oldO);
-					else {
-						Operation relatedO = new Operation();
-						relatedO.setLeft(oldO.getLeft().replace("$newestInvokeResult", newO.getLeft()));
-						relatedO.setNoOp(oldO.isNoOp());
-						relatedO.setOp(oldO.getOp());
-						relatedO.setRightA(oldO.getRightA());
-						relatedO.setRightB(oldO.getRightB());
-						related.add(relatedO);
-					}
-				}
-				for (Operation relatedO : related)
-					nonRelated.add(relatedO);
-				System.out.println(" -sorting symbolicStates, before:");
-				for (Operation o : symbolicStates)	System.out.println(" " + o.toString());
-				symbolicStates.clear();
-				for (Operation o : nonRelated)
-					symbolicStates.add(o);
-				System.out.println(" -sorting symbolicStates, after:");
-				for (Operation o : symbolicStates)	System.out.println(" " + o.toString());
-			}
-			else if (rightA.contains("$F")){
-				String thelastPart = rightA.substring(rightA.lastIndexOf("$F"));
-				if (thelastPart.startsWith("$Finstance")) {
-					String prefix = thelastPart.substring(0, thelastPart.lastIndexOf(">>")+2);
-					String objectName = thelastPart.substring(thelastPart.lastIndexOf(">>")+2);
-					for (Operation oldO : symbolicStates) {
-						if (oldO.getLeft().equals(objectName)) {
-							String relation = oldO.getRight();
-							newO.setRightA(prefix + relation);
-							break;
-						}
-					}
-				}
-			}
-		}
-		
-		if (index != -1) {
-			System.out.println(" -deleting " + symbolicStates.get(index));
-			symbolicStates.remove(index);
-		}
-		if (needToAdd) {
-			System.out.println(" -adding " + newO.toString());
-			symbolicStates.add(newO);
-		}
 	}
 
 	private void preparation() throws Exception{
@@ -541,5 +120,170 @@ public class Execution {
 		//while (!jdb.readLine().equals("TIMEOUT"));
 		
 	}
+	
+	public PathSummary concreteExecution(PathSummary pS, StaticMethod m) throws Exception {
+		
+		System.out.println("\nStarting to Execute " + m.getSmaliSignature());
+		boolean newPathCondition = false; StaticStmt lastPathStmt = new StaticStmt();
+		
+		String jdbNewLine = "";
+		while (!jdbNewLine.equals("TIMEOUT")) {
+			if (!jdbNewLine.equals(""))
+				System.out.println("\n[J]" + jdbNewLine);
+			//Processing A Breakpoint Hit
+			if (jdbNewLine.contains("Breakpoint hit: ")) {
+				// 1. Recognize the newly hit StaticStmt, and check for errors
+				String trimming = jdb.readLine();
+				while (!trimming.equals("TIMEOUT"))
+					trimming = jdb.readLine();
+				String bpInfo = jdbNewLine.substring(jdbNewLine.indexOf("Breakpoint hit: "));
+				String methodInfo = bpInfo.split(", ")[1];
+				String cN = methodInfo.substring(0, methodInfo.lastIndexOf("."));
+				String mN = methodInfo.substring(methodInfo.lastIndexOf(".")+1).replace("(", "").replace(")", "");
+				String lineInfo = bpInfo.split(", ")[2];
+				int newHitLine = Integer.parseInt(lineInfo.substring(lineInfo.indexOf("=")+1, lineInfo.indexOf(" ")));
+				StaticClass c = staticApp.findClassByJavaName(cN);
+				if (c == null)
+					throw (new Exception("Can't find StaticClass object of class " + cN));
+				if (!m.getName().equals(mN))
+					throw (new Exception("Mismatch between current StaticMethod and new Breakpoint method"));
+				StaticStmt s = m.getStmtByLineNumber(newHitLine);
+				if (s == null)
+					throw (new Exception("Can't find StaticStmt object of " + cN + ":" + newHitLine));
+				// 2. Process each StaticStmt
+				// 2-1. Last StaticStmt is IfStmt or SwitchStmt, need to update PathCondition
+				if (newPathCondition) {
+					Condition cond = new Condition();
+					ArrayList<Integer> remainingPaths = new ArrayList<Integer>();
+					if (lastPathStmt instanceof IfStmt) {
+						IfStmt ifS = (IfStmt) lastPathStmt;
+						cond = ifS.getCondition();
+						int jumpLine = ifS.getJumpTargetLineNumber(m);
+						int flowThroughLine = ifS.getFlowThroughTargetLineNumber(m);
+						if (newHitLine == jumpLine)
+							remainingPaths.add(ifS.getFlowThroughTargetLineNumber(m));
+						else if (newHitLine == flowThroughLine){
+							cond.reverseCondition();
+							remainingPaths.add(ifS.getJumpTargetLineNumber(m));
+						}
+						else throw (new Exception("IfStmt followed by unexpected Line..."));
+					}
+					else if (lastPathStmt instanceof SwitchStmt) {
+						SwitchStmt swS = (SwitchStmt) lastPathStmt;
+						Map<Integer, Condition> switchMap = swS.getSwitchMap(m);
+						if (!switchMap.containsKey(newHitLine))
+							throw (new Exception("SwitchStmt followd by unexpected Line..."));
+						cond = switchMap.get(newHitLine);
+						for (int line : switchMap.keySet()) {
+							if (line != newHitLine)
+								remainingPaths.add(line);
+						}
+					}
+					String lastPathStmtInfo = pS.getExecutionLog().get(pS.getExecutionLog().size()-1);
+					pS.addPathChoice(lastPathStmtInfo + "," + newHitLine);
+					pS.updatePathCondition(cond);
+					//TODO build new PSTBC from RemainingPaths
+					//TODO update PSTBCList
+					newPathCondition = false;
+					lastPathStmt = new StaticStmt();
+				}
+				pS.addExecutionLog(cN + ":" + newHitLine);
+				// 2-2. Current StaticStmt is Return or Throw
+				if (s.endsMethod()) {
+					if (s instanceof ReturnStmt && !((ReturnStmt) s).returnsVoid())
+						pS.updateReturnSymbol(s.getvA());
+					break;
+				}
+				// 2-3. Current StaticStmt generates New Symbol
+				else if (s.generatesSymbol()) {
+					pS.updateSymbolicStates(s.getOperation(), true);
+				}
+				// 2-4. Current StaticStmt contains Operation
+				else if (s.hasOperation()) {
+					pS.updateSymbolicStates(s.getOperation(), false);
+				}
+				// 2-5. Current StaticStmt is IfStmt or SwitchStmt, prepare for PathCondition update at next hit
+				else if (s.updatesPathCondition()) {
+					lastPathStmt = s;
+					newPathCondition = true;
+				}
+				// 2-6. Current StaticStmt is InvokeStmt
+				else if (s instanceof InvokeStmt) {
+					InvokeStmt iS = (InvokeStmt) s;
+					StaticMethod targetM = staticApp.findMethod(iS.getTargetSig());
+					StaticClass targetC = staticApp.findClassByDexName(iS.getTargetSig().split("->")[0]);
+					if (targetC != null && targetM != null) {
+						for (int i : targetM.getSourceLineNumbers())
+							jdb.setBreakPointAtLine(targetC.getJavaName(), i);
+						jdb.cont();
+						PathSummary trimmedPS = trimPSForInvoke(pS, iS.getParams());
+						PathSummary subPS = concreteExecution(trimmedPS, targetM);
+						pS.mergeWithInvokedPS(subPS);
+					}
+					else if (iS.resultsMoved()) {
+						Operation symbolOFromJavaAPI = new Operation();
+						symbolOFromJavaAPI.setLeft("$newestInvokeResult");
+						symbolOFromJavaAPI.setNoOp(true);
+						symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());
+						pS.addSymbolicState(symbolOFromJavaAPI);
+					}
+				}
+				// 3. Finished Processing StaticStmt, let jdb continue
+				jdb.cont();
+			}
+			// Finished Processing new JDB Line, Read Next Line
+			jdbNewLine = jdb.readLine();
+			if (jdbNewLine == null)
+				throw (new Exception("Jdb might have crashed."));
+			Thread.sleep(100);
+		}
+		System.out.println("\n==== Finished Executing " + m.getSmaliSignature());
+		printOutPathSummary(pS);
+		return pS;
+	}
+	
+
+	private PathSummary trimPSForInvoke(PathSummary pS, String unparsedParams) {
+		PathSummary trimmedPS = pS.clone();
+		ArrayList<String> params = new ArrayList<String>();
+		if (!unparsedParams.contains(", "))
+			params.add(unparsedParams);
+		else params = (ArrayList<String>) Arrays.asList(unparsedParams.split(", "));
+		int paramIndex = 0;
+		ArrayList<Operation> trimmedSymbolicStates = new ArrayList<Operation>();
+		for (Operation o : pS.getSymbolicStates()) {
+			// 1. left.endwith $Fstatic
+			// 2. left = parameter
+			if (params.contains(o.getLeft())) {
+				Operation newO = o.clone();
+				newO.setLeft("p" + paramIndex++);
+				params.remove(o.getLeft());
+				trimmedSymbolicStates.add(newO);
+			}
+			else if (o.getLeft().contains("$Fstatic")) {
+				trimmedSymbolicStates.add(o);
+			}
+		}
+		trimmedPS.setSymbolicStates(trimmedSymbolicStates);
+		return trimmedPS;
+	}
+
+
+	private void printOutPathSummary(PathSummary pS) {
+		System.out.println("\n Execution Log: ");
+		for (String s : pS.getExecutionLog())
+			System.out.println("  " + s);
+		System.out.println("\n Symbolic States: ");
+		for (Operation o : pS.getSymbolicStates())
+			System.out.println("  " + o.toString());
+		System.out.println("\n PathCondition: ");
+		for (Condition cond : pS.getPathCondition())
+			System.out.println("  " + cond.toString());
+		System.out.println("\n PathChoices: ");
+		for (String pC : pS.getPathChoices())
+			System.out.println("  " + pC);
+		System.out.println("========================");
+	}
+	
 
 }

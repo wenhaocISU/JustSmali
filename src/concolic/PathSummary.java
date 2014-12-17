@@ -97,18 +97,12 @@ public class PathSummary implements Serializable{
 			throw (new Exception("Can't find the assignment of returned variable from symbolicStates"));
 		Operation theAssignO = this.symbolicStates.get(index);
 		theAssignO.setLeft("$newestInvokeResult");
-		if (this.symbolicStates.get(index).getLeft().equals("$newestInvokeResult"))
-			System.out.println("[Good News in updateReturnSymbol, can delete the set(index, theAssignO)]");
-		this.symbolicStates.set(index, theAssignO);
 		if (theAssignO.isNoOp()) {
 			for (int i = index+1; i < this.symbolicStates.size(); i++) {
 				Operation o = this.symbolicStates.get(i);
 				if (o.getLeft().endsWith(theAssignO.getRightA())) {
 					String newLeft = o.getLeft().replace(theAssignO.getRightA(), "$newestInvokeResult");
 					o.setLeft(newLeft);
-					if (o.getLeft().equals(this.symbolicStates.get(i).getLeft()))
-						System.out.println("Good News in updateReturnSymbol. Can delete the set(i, o)");
-					this.symbolicStates.set(i, o);
 				}
 			}
 		}
@@ -147,17 +141,11 @@ public class PathSummary implements Serializable{
 			int assignOIndex = getIndexOfOperationWithLeft("$newestInvokeResult");
 			Operation assignO = this.symbolicStates.get(assignOIndex);
 			assignO.setLeft(newO.getLeft());
-			if (this.symbolicStates.get(assignOIndex).getLeft().equals(newO.getLeft()))
-				System.out.println("[Good News in updateSymbolicStates, can delete assignOIndex]");
-			this.symbolicStates.set(assignOIndex, assignO);
 			if (!assignO.isNoOp())
 				for (int i = assignOIndex+1; i < this.symbolicStates.size(); i++) {
 					Operation o = this.symbolicStates.get(i);
 					if (o.getLeft().contains("$newestInvokeResult")) {
 						o.setLeft(o.getLeft().replace("$newestInvokeResult", assignO.getRightA()));
-						if (this.getSymbolicStates().get(i).getLeft().equals(o.getLeft()))
-							System.out.println("Good News can delete set i o");
-						this.symbolicStates.set(i, o);
 					}
 				}
 		}
