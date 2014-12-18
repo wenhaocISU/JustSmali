@@ -20,10 +20,11 @@ public class Execution {
 	private StaticApp staticApp;
 	private String pkgName;
 	private StaticMethod eventHandlerMethod;
-	private ArrayList<PSToBeContinued> PSTBCList = new ArrayList<PSToBeContinued>();
 	private ArrayList<String> seq = new ArrayList<String>();
 	private Adb adb;
 	private Jdb jdb;
+	private ArrayList<PathSummary> pathSummaries = new ArrayList<PathSummary>();
+	private ArrayList<ToDoPath> toDoPathList = new ArrayList<ToDoPath>();
 	
 	public Execution(StaticApp staticApp) {
 		this.staticApp = staticApp;
@@ -42,7 +43,9 @@ public class Execution {
 	
 	public void doIt() {
 		try {
+			
 			preparation();
+			
 			adb.click(seq.get(seq.size()-1));
 			Thread.sleep(100);
 
@@ -50,45 +53,38 @@ public class Execution {
 			pS_0.setSymbolicStates(initSymbolicStates(eventHandlerMethod));
 			
 			pS_0 = concreteExecution(pS_0, eventHandlerMethod);
+			pathSummaries.add(pS_0);
 			
-			System.out.println("\nNumber of PSTBC: " + PSTBCList.size());
-			System.out.println("Number of path choices: " + pS_0.getPathChoices().size());
-			for (String pC : pS_0.getPathChoices())
-				System.out.println("  " + pC);
 			//symbolicallyFinishingUp();
+			System.out.println("------------ToDoPathList--------------");
+			int i = 1;
+			for (ToDoPath p : toDoPathList) {
+				System.out.println("ToDoPath No." + i++ + ": ");
+				System.out.println(" Path Choices:");
+				for (String s : p.getPathChoices())
+					System.out.println("  " + s);
+				System.out.println(" Target Stmt:   " + p.getTargetPathStmtInfo());
+				System.out.println(" New Direction: " + p.getNewDirection());
+			}
+			
+			
 			jdb.exit();
+			
 		}	catch (Exception e) {e.printStackTrace();}
 	}
-	
-	private ArrayList<Operation> initSymbolicStates(StaticMethod targetM) {
-		ArrayList<Operation> symbolicStates = new ArrayList<Operation>();
-		int paramCount = eventHandlerMethod.getParameterTypes().size();
-		if (!eventHandlerMethod.isStatic())
-			paramCount++;
-		for (int i = 0; i < paramCount; i++) {
-			Operation o = new Operation();
-			o.setLeft("p" + i);
-			o.setNoOp(true);
-			o.setRightA("$parameter" + i);
-			symbolicStates.add(o);
-		}
-		return symbolicStates;
-	}
-
-
 
 	private void preparation() throws Exception{
-		System.out.print("\nReinstalling App...  ");
+		System.out.print("\nReinstalling and Restarting App...  ");
 		adb.uninstallApp(staticApp.getPackageName());
 		adb.installApp(staticApp.getSignedAppPath());
-		System.out.println("Done. Starting App.");
+		System.out.println("Done.");
 		adb.startApp(pkgName, staticApp.getMainActivity().getJavaName());
 		
 		System.out.print("\nInitiating jdb...  ");
 		jdb.init(pkgName);
 		System.out.println("Done.");
 		
-		System.out.print("\nGoing to target Layout...  ");
+		System.out.print("\nGoing to Target Layout...  ");
 		for (int i = 0, len = seq.size()-1; i < len; i++) {
 			adb.click(seq.get(i));
 			Thread.sleep(300);
@@ -98,11 +94,9 @@ public class Execution {
 		for (int i : eventHandlerMethod.getSourceLineNumbers()) {
 			jdb.setBreakPointAtLine(eventHandlerMethod.getDeclaringClass(staticApp).getJavaName(), i);
 		}
-		
-		System.out.println("\nStarting Concrete Execution.");
 	}
 	
-	public PathSummary concreteExecution(PathSummary pS, StaticMethod m) throws Exception {
+	private PathSummary concreteExecution(PathSummary pS, StaticMethod m) throws Exception {
 		
 		System.out.println("\nStarting to Execute " + m.getSmaliSignature());
 		boolean newPathCondition = false; StaticStmt lastPathStmt = new StaticStmt();
@@ -161,10 +155,15 @@ public class Execution {
 						}
 					}
 					String lastPathStmtInfo = pS.getExecutionLog().get(pS.getExecutionLog().size()-1);
+					for (int i : remainingPaths) {
+						ToDoPath toDoPath = new ToDoPath();
+						toDoPath.setNewDirection(i);
+						toDoPath.setPathChoices(pS.getPathChoices());
+						toDoPath.setTargetPathStmtInfo(lastPathStmtInfo);
+						toDoPathList.add(toDoPath);
+					}
 					pS.addPathChoice(lastPathStmtInfo + "," + newHitLine);
 					pS.updatePathCondition(cond);
-					//TODO build new PSTBC from RemainingPaths
-					//TODO update PSTBCList
 					newPathCondition = false;
 					lastPathStmt = new StaticStmt();
 				}
@@ -223,7 +222,56 @@ public class Execution {
 		return pS;
 	}
 	
-
+	private void symbolicallyFinishingUp() throws Exception{
+		while (toDoPathList.size()>0) {
+			ToDoPath toDoPath = toDoPathList.get(toDoPathList.size()-1);
+			toDoPathList.remove(toDoPathList.size()-1);
+			PathSummary initPS = new PathSummary();
+			initPS.setSymbolicStates(initSymbolicStates(eventHandlerMethod));
+			symbolicExecution(initPS, eventHandlerMethod, toDoPath);
+		}
+	}
+	
+	private PathSummary symbolicExecution(PathSummary pS, StaticMethod m, ToDoPath toDoPath) throws Exception{
+		//TODO Get the method's Stmt list, starting from the first one,
+		// react according to the Stmt, until met a ReturnStmt or ThrowStmt
+		ArrayList<StaticStmt> allStmts = m.getSmaliStmts();
+		String className = m.getDeclaringClass(staticApp).getJavaName();
+		for (int stmtID = 0; stmtID < allStmts.size(); stmtID++) {
+			StaticStmt s = allStmts.get(stmtID);
+			pS.addExecutionLog(className + ":" + s.getSourceLineNumber());
+			if (s.endsMethod()) {
+				if (s instanceof ReturnStmt && !((ReturnStmt) s).returnsVoid())
+					pS.updateReturnSymbol(s.getvA());
+				break;
+			}
+			else if (s.generatesSymbol()) {
+				pS.updateSymbolicStates(s.getOperation(), true);
+			}
+			else if (s.hasOperation()) {
+				pS.updateSymbolicStates(s.getOperation(), false);
+			}
+			//TODO 4. Updates PathCondition
+			else if (s.updatesPathCondition()) {
+				// see if toDoPath contains this PathStmt, 
+			}
+			//TODO 5. Invokes Method
+			else if (s instanceof InvokeStmt) {
+				
+			}
+		}
+		printOutPathSummary(pS);
+		return pS;
+	}
+	
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//										Utility Methods
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
 	private PathSummary trimPSForInvoke(PathSummary pS, String unparsedParams) {
 		PathSummary trimmedPS = pS.clone();
 		ArrayList<String> params = new ArrayList<String>();
@@ -266,7 +314,22 @@ public class Execution {
 		System.out.println("========================");
 	}
 	
-	private Operation updateConcreteSymbol(Operation newSymbolO) {
+	private ArrayList<Operation> initSymbolicStates(StaticMethod targetM) {
+		ArrayList<Operation> symbolicStates = new ArrayList<Operation>();
+		int paramCount = eventHandlerMethod.getParameterTypes().size();
+		if (!eventHandlerMethod.isStatic())
+			paramCount++;
+		for (int i = 0; i < paramCount; i++) {
+			Operation o = new Operation();
+			o.setLeft("p" + i);
+			o.setNoOp(true);
+			o.setRightA("$parameter" + i);
+			symbolicStates.add(o);
+		}
+		return symbolicStates;
+	}
+	
+/*	private Operation updateConcreteSymbol(Operation newSymbolO) {
 		
 		Operation result = newSymbolO;
 		String[] parts = result.getRightA().split(">>");
@@ -283,7 +346,6 @@ public class Execution {
 			result.setRightA(parts[0] + ">>" + parts[1] + ">>" + parts[2]);
 		}
 		return result;
-	}
-	
+	}*/
 
 }
