@@ -2,6 +2,7 @@ package concolic;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 
 import smali.stmt.IfStmt;
@@ -55,19 +56,8 @@ public class Execution {
 			pS_0 = concreteExecution(pS_0, eventHandlerMethod);
 			pathSummaries.add(pS_0);
 			
-			//symbolicallyFinishingUp();
-			System.out.println("------------ToDoPathList--------------");
-			int i = 1;
-			for (ToDoPath p : toDoPathList) {
-				System.out.println("ToDoPath No." + i++ + ": ");
-				System.out.println(" Path Choices:");
-				for (String s : p.getPathChoices())
-					System.out.println("  " + s);
-				System.out.println(" Target Stmt:   " + p.getTargetPathStmtInfo());
-				System.out.println(" New Direction: " + p.getNewDirection());
-			}
-			
-			
+			symbolicallyFinishingUp();
+	
 			jdb.exit();
 			
 		}	catch (Exception e) {e.printStackTrace();}
@@ -153,6 +143,7 @@ public class Execution {
 							if (line != newHitLine)
 								remainingPaths.add(line);
 						}
+						Collections.reverse(remainingPaths);
 					}
 					String lastPathStmtInfo = pS.getExecutionLog().get(pS.getExecutionLog().size()-1);
 					for (int i : remainingPaths) {
@@ -253,7 +244,9 @@ public class Execution {
 			}
 			//TODO 4. Updates PathCondition
 			else if (s.updatesPathCondition()) {
-				// see if toDoPath contains this PathStmt, 
+				// see if toDoPath.pathChoice contains this PathStmt, then follow that direction
+				// else see if toDoPath.targetPathStmt is this PathStmt, then follow the toDoPath.newDirection
+				// else we choose one direction, then 
 			}
 			//TODO 5. Invokes Method
 			else if (s instanceof InvokeStmt) {

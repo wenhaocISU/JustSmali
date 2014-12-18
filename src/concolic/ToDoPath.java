@@ -13,7 +13,8 @@ public class ToDoPath {
 	}
 	
 	public void setPathChoices(ArrayList<String> pathChoices) {
-		this.pathChoices = pathChoices;
+		this.pathChoices = new ArrayList<String>();
+		this.pathChoices.addAll(pathChoices);
 	}
 
 	public String getTargetPathStmtInfo() {
