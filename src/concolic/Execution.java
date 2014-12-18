@@ -56,8 +56,14 @@ public class Execution {
 			pS_0 = concreteExecution(pS_0, eventHandlerMethod);
 			pathSummaries.add(pS_0);
 			
+			int index = 1;
+			for (ToDoPath t : toDoPathList) {
+				System.out.println("\nToDoPath " + index++);
+				System.out.println("[TargetStmtInfo] " + t.getTargetPathStmtInfo());
+				System.out.println("[NewDirection]   " + t.getNewDirection());
+			}
 			//symbolicallyFinishingUp();
-	
+			
 			jdb.exit();
 			
 		}	catch (Exception e) {e.printStackTrace();}
