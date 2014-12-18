@@ -145,7 +145,7 @@ public class Execution {
 						Map<Integer, Integer> switchMap = swS.getSwitchMap(m);
 						int realValue = Integer.parseInt(this.getConcreteValue(swS.getSwitchV()));
 						if (!switchMap.containsKey(realValue))
-							throw (new Exception("SwitchStmt ran into an unexpected real value..."));
+							throw (new Exception("SwitchStmt ran into an unexpected real value " + realValue));
 						if (newHitLine != switchMap.get(realValue))
 							throw (new Exception("SwitchStmt followd by unexpected Line..."));
 						//TODO then generate that condition
