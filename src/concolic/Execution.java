@@ -138,20 +138,29 @@ public class Execution {
 						toDoPath.setPathChoices(pS.getPathChoices());
 						toDoPath.setTargetPathStmtInfo(lastPathStmtInfo);
 						toDoPathList.add(toDoPath);
+						pS.addPathChoice(lastPathStmtInfo + "," + newHitLine);
+						pS.updatePathCondition(cond);
 					}
 					else if (lastPathStmt instanceof SwitchStmt) {
 						ArrayList<Integer> remainingValues = new ArrayList<Integer>();
 						SwitchStmt swS = (SwitchStmt) lastPathStmt;
 						Map<Integer, Integer> switchMap = swS.getSwitchMap(m);
 						int realValue = Integer.parseInt(this.getConcreteValue(swS.getSwitchV()));
-						if (!switchMap.containsKey(realValue))
-							throw (new Exception("SwitchStmt ran into an unexpected real value " + realValue));
-						if (newHitLine != switchMap.get(realValue))
+						pS.addPathChoice(lastPathStmtInfo + "," + realValue);
+						if (!switchMap.containsValue(newHitLine) && newHitLine != swS.getFlowThroughLineNumber(m))
 							throw (new Exception("SwitchStmt followd by unexpected Line..."));
-						//TODO then generate that condition
-						cond.setLeft(swS.getSwitchV());
-						cond.setOp("=");
-						cond.setRight("" + realValue);
+						if (switchMap.containsKey(realValue) && switchMap.get(realValue) != newHitLine)
+							throw (new Exception("SwitchStmt value and jumped line does not match..."));
+						if (switchMap.containsValue(newHitLine)) { // one of switch lines
+							cond.setLeft(swS.getSwitchV());
+							cond.setOp("=");
+							cond.setRight("" + realValue);
+							pS.updatePathCondition(cond);
+						}
+						else {	// flows through line
+							for (Condition cnd : swS.getFlowThroughConditions())
+								pS.updatePathCondition(cnd);
+						}
 						//TODO then use the remaining value and corresponding direction build ToDoPath
 						for (Integer v : switchMap.keySet())
 							if (v != realValue)
@@ -165,8 +174,6 @@ public class Execution {
 							toDoPathList.add(toDoPath);
 						}
 					}
-					pS.addPathChoice(lastPathStmtInfo + "," + newHitLine);
-					pS.updatePathCondition(cond);
 					newPathCondition = false;
 					lastPathStmt = new StaticStmt();
 				}

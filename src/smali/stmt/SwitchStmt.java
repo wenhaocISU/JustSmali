@@ -1,12 +1,12 @@
 package smali.stmt;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import concolic.Condition;
-import concolic.Operation;
 import staticFamily.StaticMethod;
 import staticFamily.StaticStmt;
+import concolic.Condition;
 
 @SuppressWarnings("serial")
 public class SwitchStmt extends StaticStmt{
@@ -62,11 +62,25 @@ public class SwitchStmt extends StaticStmt{
 		}
 		return result;
 	}
-	
-	
+
 	public void setSwitchMap(Map<Integer, String> switchMap) {
 		this.switchMap = switchMap;
 	}
 		
-
+	public int getFlowThroughLineNumber(StaticMethod m) {
+		return m.getSmaliStmts().get(getStmtID()+1).getSourceLineNumber();
+	}
+	
+	public ArrayList<Condition> getFlowThroughConditions() {
+		ArrayList<Condition> result = new ArrayList<Condition>();
+		for (int value : this.switchMap.keySet()) {
+			Condition cond = new Condition();
+			cond.setLeft(getSwitchV());
+			cond.setOp("!=");
+			cond.setRight("" + value);
+			result.add(cond);
+		}
+		return result;
+	}
+	
 }
