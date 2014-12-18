@@ -33,5 +33,14 @@ public class ToDoPath {
 		this.newDirection = newDirection;
 	}
 	
+	public int getPathChoice(String pathStmtInfo) {
+		for (String pC : this.pathChoices) {
+			String stmtInfo = pC.split(",")[0];
+			String choice = pC.split(",")[1];
+			if (stmtInfo.equals(pathStmtInfo))
+				return Integer.parseInt(choice);
+		}
+		return -1;
+	}
 	
 }

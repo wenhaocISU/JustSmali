@@ -164,8 +164,22 @@ public class Parser {
 							s.setOriginalLineNumber(originalLineNumber);
 							originalLineNumber = -1;
 						}
+						//TODO add '.local vi, wenhaovi:I' for SwitchStmt
+						if (s instanceof SwitchStmt) {
+							String vName = ((SwitchStmt) s).getSwitchV();
+							classSmali = classSmali.substring(0, classSmali.length()-1);
+							String methodSmali = m.getSmaliCode();
+							methodSmali = methodSmali.substring(0, methodSmali.length()-1);
+							classSmali = classSmali.substring(0, classSmali.lastIndexOf("\n")+1);
+							methodSmali = methodSmali.substring(0, methodSmali.lastIndexOf("\n")+1);
+							classSmali += "    .local " + vName + ", wenhao" + vName + ":I";
+							methodSmali += "    .local " + vName + ", wenhao" + vName + ":I";
+							classSmali += "\n    " + line + "\n";
+							methodSmali += "\n    " + line + "\n";
+							m.setSmaliCode(methodSmali);
+						}
 						// check locals
-						if (s.generatesSymbol() && s instanceof FieldStmt && !((FieldStmt) s).isStatic()) {
+/*						if (s.generatesSymbol() && s instanceof FieldStmt && !((FieldStmt) s).isStatic()) {
 							String objectV = ((FieldStmt) s).getObject();
 							if (!s.getvDebugInfo().containsKey(objectV)) {
 								classSmali = classSmali.substring(0, classSmali.length()-1);
@@ -179,7 +193,8 @@ public class Parser {
 								methodSmali += "\n    " + line + "\n";
 								m.setSmaliCode(methodSmali);
 							}
-						}
+						}*/
+
 /*						if (stmtID > 1) {
 							StaticStmt lastS = m.getSmaliStmts().get(stmtID-2);
 							if (lastS.generatesSymbol() && lastS instanceof FieldStmt) {
@@ -502,7 +517,7 @@ public class Parser {
 		else if (line.startsWith(":sswitch_data_") || line.startsWith(":pswtich_data_")) {
 			String sLabel = line;
 			SwitchStmt ss = new SwitchStmt();
-			Map<String, String> switchMap = new HashMap<String, String>();
+			Map<Integer, String> switchMap = new HashMap<Integer, String>();
 			for (StaticStmt s : m.getSmaliStmts()) {
 				if (s instanceof SwitchStmt && ((SwitchStmt) s).getSwitchMapLabel().equals(sLabel)) {
 					ss = (SwitchStmt) s;
@@ -517,20 +532,25 @@ public class Parser {
 				if (ss.isPswitch()) {
 					int psindex = 0;
 					if (line.startsWith(".packed-switch"))
-						ss.setpSwitchInitValue(line.split(" ")[1]);
+						ss.setpSwitchInitValue(line.split(" ")[1].replace("0x", ""));
 					else if (line.startsWith(":")) {
-						switchMap.put("0x" + Integer.toHexString(psindex++), line);
+						int initValue = Integer.parseInt(ss.getpSwitchInitValue(), 16);
+						switchMap.put(initValue + psindex++, line);
 					}
 				}
 				else if (ss.isSswitch()){
 					if (line.contains(" -> ")) {
-						String value = line.split(" -> ")[0];
+						String value = line.split(" -> ")[0].replace("0x", "");
 						String tgtLabel = line.split(" -> ")[1];
-						switchMap.put(value, tgtLabel);
+						switchMap.put(Integer.parseInt(value, 16), tgtLabel);
 					}
 				}
 			}
 			ss.setSwitchMap(switchMap);
+			System.out.println("[SWITCHMAP]");
+			for (Map.Entry<Integer, String> entry : switchMap.entrySet()) {
+				System.out.println(" " + entry.getKey() + " - " + entry.getValue());
+			}
 		}
 		else if (line.startsWith(":try_start_")){
 			label.addTryLabel(line);

@@ -56,7 +56,7 @@ public class Execution {
 			pS_0 = concreteExecution(pS_0, eventHandlerMethod);
 			pathSummaries.add(pS_0);
 			
-			symbolicallyFinishingUp();
+			//symbolicallyFinishingUp();
 	
 			jdb.exit();
 			
@@ -119,39 +119,51 @@ public class Execution {
 				// 2-1. Last StaticStmt is IfStmt or SwitchStmt, need to update PathCondition
 				if (newPathCondition) {
 					Condition cond = new Condition();
-					ArrayList<Integer> remainingPaths = new ArrayList<Integer>();
+					String lastPathStmtInfo = pS.getExecutionLog().get(pS.getExecutionLog().size()-1);
 					if (lastPathStmt instanceof IfStmt) {
 						IfStmt ifS = (IfStmt) lastPathStmt;
 						cond = ifS.getCondition();
 						int jumpLine = ifS.getJumpTargetLineNumber(m);
 						int flowThroughLine = ifS.getFlowThroughTargetLineNumber(m);
+						int remainingLine = -1;
 						if (newHitLine == jumpLine)
-							remainingPaths.add(ifS.getFlowThroughTargetLineNumber(m));
+							remainingLine = flowThroughLine;
 						else if (newHitLine == flowThroughLine){
 							cond.reverseCondition();
-							remainingPaths.add(ifS.getJumpTargetLineNumber(m));
+							remainingLine = jumpLine;
 						}
 						else throw (new Exception("IfStmt followed by unexpected Line..."));
-					}
-					else if (lastPathStmt instanceof SwitchStmt) {
-						SwitchStmt swS = (SwitchStmt) lastPathStmt;
-						Map<Integer, Condition> switchMap = swS.getSwitchMap(m);
-						if (!switchMap.containsKey(newHitLine))
-							throw (new Exception("SwitchStmt followd by unexpected Line..."));
-						cond = switchMap.get(newHitLine);
-						for (int line : switchMap.keySet()) {
-							if (line != newHitLine)
-								remainingPaths.add(line);
-						}
-						Collections.reverse(remainingPaths);
-					}
-					String lastPathStmtInfo = pS.getExecutionLog().get(pS.getExecutionLog().size()-1);
-					for (int i : remainingPaths) {
 						ToDoPath toDoPath = new ToDoPath();
-						toDoPath.setNewDirection(i);
+						toDoPath.setNewDirection(remainingLine);
 						toDoPath.setPathChoices(pS.getPathChoices());
 						toDoPath.setTargetPathStmtInfo(lastPathStmtInfo);
 						toDoPathList.add(toDoPath);
+					}
+					else if (lastPathStmt instanceof SwitchStmt) {
+						ArrayList<Integer> remainingValues = new ArrayList<Integer>();
+						SwitchStmt swS = (SwitchStmt) lastPathStmt;
+						Map<Integer, Integer> switchMap = swS.getSwitchMap(m);
+						int realValue = Integer.parseInt(this.getConcreteValue(swS.getSwitchV()));
+						if (!switchMap.containsKey(realValue))
+							throw (new Exception("SwitchStmt ran into an unexpected real value..."));
+						if (newHitLine != switchMap.get(realValue))
+							throw (new Exception("SwitchStmt followd by unexpected Line..."));
+						//TODO then generate that condition
+						cond.setLeft(swS.getSwitchV());
+						cond.setOp("=");
+						cond.setRight("" + realValue);
+						//TODO then use the remaining value and corresponding direction build ToDoPath
+						for (Integer v : switchMap.keySet())
+							if (v != realValue)
+								remainingValues.add(v);
+						Collections.reverse(remainingValues);
+						for (int i : remainingValues) {
+							ToDoPath toDoPath = new ToDoPath();
+							toDoPath.setNewDirection(i);
+							toDoPath.setPathChoices(pS.getPathChoices());
+							toDoPath.setTargetPathStmtInfo(lastPathStmtInfo);
+							toDoPathList.add(toDoPath);
+						}
 					}
 					pS.addPathChoice(lastPathStmtInfo + "," + newHitLine);
 					pS.updatePathCondition(cond);
@@ -224,12 +236,11 @@ public class Execution {
 	}
 	
 	private PathSummary symbolicExecution(PathSummary pS, StaticMethod m, ToDoPath toDoPath) throws Exception{
-		//TODO Get the method's Stmt list, starting from the first one,
-		// react according to the Stmt, until met a ReturnStmt or ThrowStmt
+		
 		ArrayList<StaticStmt> allStmts = m.getSmaliStmts();
 		String className = m.getDeclaringClass(staticApp).getJavaName();
-		for (int stmtID = 0; stmtID < allStmts.size(); stmtID++) {
-			StaticStmt s = allStmts.get(stmtID);
+		StaticStmt s = allStmts.get(0);
+		while (true) {
 			pS.addExecutionLog(className + ":" + s.getSourceLineNumber());
 			if (s.endsMethod()) {
 				if (s instanceof ReturnStmt && !((ReturnStmt) s).returnsVoid())
@@ -242,16 +253,63 @@ public class Execution {
 			else if (s.hasOperation()) {
 				pS.updateSymbolicStates(s.getOperation(), false);
 			}
-			//TODO 4. Updates PathCondition
 			else if (s.updatesPathCondition()) {
-				// see if toDoPath.pathChoice contains this PathStmt, then follow that direction
-				// else see if toDoPath.targetPathStmt is this PathStmt, then follow the toDoPath.newDirection
-				// else we choose one direction, then 
-			}
-			//TODO 5. Invokes Method
-			else if (s instanceof InvokeStmt) {
+				String stmtInfo = className + ":" + s.getSourceLineNumber();
+				int pastChoice = toDoPath.getPathChoice(stmtInfo);
+				int nextStmtLineNumber = -1;
+				ArrayList<Integer> remainingPaths = new ArrayList<Integer>();
+				if (s instanceof IfStmt) {
+					IfStmt ifS = (IfStmt) s;
+					if (pastChoice > -1) {
+						nextStmtLineNumber = pastChoice;
+					}
+					else if (toDoPath.getTargetPathStmtInfo().equals(stmtInfo)) {
+						nextStmtLineNumber = toDoPath.getNewDirection();
+					}
+					else {
+						nextStmtLineNumber = ifS.getJumpTargetLineNumber(m);
+						remainingPaths.add(ifS.getFlowThroughTargetLineNumber(m));
+					}
+					//TODO add new path condition
+					//TODO add new path choice
+				}
+				else if (s instanceof SwitchStmt) {
+					SwitchStmt swS = (SwitchStmt) s;
+					if (pastChoice > -1) {
+						nextStmtLineNumber = pastChoice;
+					}
+					else if (toDoPath.getTargetPathStmtInfo().equals(stmtInfo)) {
+						nextStmtLineNumber = toDoPath.getNewDirection();
+					}
+					else {
+						//
+					}
+				}
 				
+				//TODO build ToDoPath from remainingPaths
+				s = m.getStmtByLineNumber(nextStmtLineNumber);
+				continue;
 			}
+			else if (s instanceof InvokeStmt) {
+				//TODO samething as the concrete execution?
+				InvokeStmt iS = (InvokeStmt) s;
+				StaticMethod targetM = staticApp.findMethod(iS.getTargetSig());
+				StaticClass targetC = staticApp.findClassByDexName(iS.getTargetSig().split("->")[0]);
+				if (targetC != null && targetM != null) {
+					PathSummary trimmedPS = trimPSForInvoke(pS, iS.getParams());
+					PathSummary subPS = concreteExecution(trimmedPS, targetM);
+					pS.mergeWithInvokedPS(subPS);
+				}
+				else if (iS.resultsMoved()) {
+					Operation symbolOFromJavaAPI = new Operation();
+					symbolOFromJavaAPI.setLeft("$newestInvokeResult");
+					symbolOFromJavaAPI.setNoOp(true);
+					symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());
+					pS.addSymbolicState(symbolOFromJavaAPI);
+				}
+			}
+			int nextStmtID = s.getStmtID()+1;
+			s = allStmts.get(nextStmtID);
 		}
 		printOutPathSummary(pS);
 		return pS;
@@ -340,5 +398,15 @@ public class Execution {
 		}
 		return result;
 	}*/
+	private String getConcreteValue(String vName) {
+		ArrayList<String> jdbLocals = jdb.getLocals();
+		for (String jL : jdbLocals) {
+			String left = jL.split(" = ")[0];
+			String right = jL.split(" = ")[1];
+			if (left.equals("wenhao" + vName))
+				return right;
+		}
+		return "";
+	}
 
 }

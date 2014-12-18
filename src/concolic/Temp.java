@@ -67,15 +67,15 @@ public class Temp {
 						else throw (new Exception("IfStmt followed by unexpected Line..."));
 					}
 					else if (lastPathStmt instanceof SwitchStmt) {
-						SwitchStmt swS = (SwitchStmt) lastPathStmt;
-						Map<Integer, Condition> switchMap = swS.getSwitchMap(m);
+/*						SwitchStmt swS = (SwitchStmt) lastPathStmt;
+						Map<Condition, Integer> switchMap = swS.getSwitchMap(m);
 						if (!switchMap.containsKey(newHitLine))
 							throw (new Exception("SwitchStmt followd by unexpected Line..."));
 						cond = switchMap.get(newHitLine);
 						for (int line : switchMap.keySet()) {
 							if (line != newHitLine)
 								remainingPaths.add(line);
-						}
+						}*/
 					}
 					String lastPathStmtInfo = pS.getExecutionLog().get(pS.getExecutionLog().size()-1);
 					pS.addPathChoice(lastPathStmtInfo + "," + newHitLine);

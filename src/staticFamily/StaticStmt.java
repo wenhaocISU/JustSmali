@@ -208,5 +208,4 @@ public class StaticStmt implements Serializable{
 		this.endsMethod = endsMethod;
 	}
 
-	
 }
