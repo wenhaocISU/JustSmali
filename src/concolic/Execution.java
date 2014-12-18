@@ -56,13 +56,14 @@ public class Execution {
 			pS_0 = concreteExecution(pS_0, eventHandlerMethod);
 			pathSummaries.add(pS_0);
 			
-			int index = 1;
+/*			int index = 1;
 			for (ToDoPath t : toDoPathList) {
 				System.out.println("\nToDoPath " + index++);
 				System.out.println("[TargetStmtInfo] " + t.getTargetPathStmtInfo());
 				System.out.println("[NewDirection]   " + t.getNewDirection());
-			}
-			//symbolicallyFinishingUp();
+			}*/
+			
+			symbolicallyFinishingUp();
 			
 			jdb.exit();
 			
@@ -128,7 +129,7 @@ public class Execution {
 					String lastPathStmtInfo = pS.getExecutionLog().get(pS.getExecutionLog().size()-1);
 					if (lastPathStmt instanceof IfStmt) {
 						IfStmt ifS = (IfStmt) lastPathStmt;
-						cond = ifS.getCondition();
+						cond = ifS.getJumpCondition();
 						int jumpLine = ifS.getJumpTargetLineNumber(m);
 						int flowThroughLine = ifS.getFlowThroughTargetLineNumber(m);
 						int remainingLine = -1;
@@ -163,11 +164,11 @@ public class Execution {
 							cond.setRight("" + realValue);
 							pS.updatePathCondition(cond);
 						}
-						else {	// flows through line
+						else {
 							for (Condition cnd : swS.getFlowThroughConditions())
 								pS.updatePathCondition(cnd);
 						}
-						//TODO then use the remaining value and corresponding direction build ToDoPath
+						//TODO this part need fixing. the remaining value should also include a value or a condition that make it flows through
 						for (Integer v : switchMap.keySet())
 							if (v != realValue)
 								remainingValues.add(v);
@@ -268,43 +269,59 @@ public class Execution {
 			}
 			else if (s.updatesPathCondition()) {
 				String stmtInfo = className + ":" + s.getSourceLineNumber();
-				int pastChoice = toDoPath.getPathChoice(stmtInfo);
+				int pastChoice = toDoPath.getPastChoice(stmtInfo);
 				int nextStmtLineNumber = -1;
-				ArrayList<Integer> remainingPaths = new ArrayList<Integer>();
 				if (s instanceof IfStmt) {
+					//here pastChoice is the line number
 					IfStmt ifS = (IfStmt) s;
+					Condition cond = ifS.getJumpCondition();
+					// need to follow past choice
 					if (pastChoice > -1) {
 						nextStmtLineNumber = pastChoice;
+						if (nextStmtLineNumber != ifS.getJumpTargetLineNumber(m))
+							cond.reverseCondition();
 					}
+					// need to follow new direction
 					else if (toDoPath.getTargetPathStmtInfo().equals(stmtInfo)) {
 						nextStmtLineNumber = toDoPath.getNewDirection();
+						if (nextStmtLineNumber != ifS.getJumpTargetLineNumber(m))
+							cond.reverseCondition();
 					}
+					// need to chooose jump target, then build ToDoPath from flowthrough target
 					else {
 						nextStmtLineNumber = ifS.getJumpTargetLineNumber(m);
-						remainingPaths.add(ifS.getFlowThroughTargetLineNumber(m));
+						int remainingPath = ifS.getFlowThroughTargetLineNumber(m);
+						ToDoPath toDo = new ToDoPath();
+						toDo.setNewDirection(remainingPath);
+						toDo.setPathChoices(pS.getPathChoices());
+						toDo.setTargetPathStmtInfo(stmtInfo);
+						toDoPathList.add(toDo);
 					}
-					//TODO add new path condition
-					//TODO add new path choice
+					pS.addPathChoice(stmtInfo + "," + nextStmtLineNumber);
+					pS.updatePathCondition(cond);
 				}
 				else if (s instanceof SwitchStmt) {
+					//TODO maybe redo this whole 'if (s.updatesPathCondition())' section
+					boolean shouldFollowPast = toDoPath.hasPastChoice(stmtInfo);
+					int nextValue = -1;
+					ArrayList<Integer> remainingValues = new ArrayList<Integer>();
 					SwitchStmt swS = (SwitchStmt) s;
-					if (pastChoice > -1) {
-						nextStmtLineNumber = pastChoice;
+					if (shouldFollowPast) {
+						nextValue = pastChoice;
+						
 					}
 					else if (toDoPath.getTargetPathStmtInfo().equals(stmtInfo)) {
-						nextStmtLineNumber = toDoPath.getNewDirection();
+						nextValue = toDoPath.getNewDirection();
 					}
 					else {
-						//
+						
 					}
 				}
-				
-				//TODO build ToDoPath from remainingPaths
 				s = m.getStmtByLineNumber(nextStmtLineNumber);
 				continue;
 			}
 			else if (s instanceof InvokeStmt) {
-				//TODO samething as the concrete execution?
+				//TODO samething as the concrete execution? needs redo
 				InvokeStmt iS = (InvokeStmt) s;
 				StaticMethod targetM = staticApp.findMethod(iS.getTargetSig());
 				StaticClass targetC = staticApp.findClassByDexName(iS.getTargetSig().split("->")[0]);

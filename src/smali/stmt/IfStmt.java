@@ -36,7 +36,7 @@ public class IfStmt extends StaticStmt{
 		has2V = has2v;
 	}
 	
-	public Condition getCondition() {
+	public Condition getJumpCondition() {
 		Condition result = new Condition();
 		String op = getTheStmt().split(" ")[0].split("-")[1];
 		result.setLeft(getvA());

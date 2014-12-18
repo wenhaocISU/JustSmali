@@ -55,7 +55,7 @@ public class Temp {
 					ArrayList<Integer> remainingPaths = new ArrayList<Integer>();
 					if (lastPathStmt instanceof IfStmt) {
 						IfStmt ifS = (IfStmt) lastPathStmt;
-						cond = ifS.getCondition();
+						cond = ifS.getJumpCondition();
 						int jumpLine = ifS.getJumpTargetLineNumber(m);
 						int flowThroughLine = ifS.getFlowThroughTargetLineNumber(m);
 						if (newHitLine == jumpLine)

@@ -33,7 +33,7 @@ public class ToDoPath {
 		this.newDirection = newDirection;
 	}
 	
-	public int getPathChoice(String pathStmtInfo) {
+	public int getPastChoice(String pathStmtInfo) {
 		for (String pC : this.pathChoices) {
 			String stmtInfo = pC.split(",")[0];
 			String choice = pC.split(",")[1];
@@ -41,6 +41,15 @@ public class ToDoPath {
 				return Integer.parseInt(choice);
 		}
 		return -1;
+	}
+	
+	public boolean hasPastChoice(String pathStmtInfo) {
+		for (String pC : this.pathChoices) {
+			String stmtInfo = pC.split(",")[0];
+			if (stmtInfo.equals(pathStmtInfo))
+				return true;
+		}
+		return false;
 	}
 	
 }
