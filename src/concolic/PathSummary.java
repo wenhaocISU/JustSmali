@@ -108,12 +108,13 @@ public class PathSummary implements Serializable{
 		}
 	}
 	
-	public void updateSymbolicStates(Operation newO, boolean newSymbol) {
+	public void updateSymbolicStates(Operation oToAdd, boolean newSymbol) {
 		// only 4 possible scenarios:
 		// 1. vi = vm op vn
 		// 2. vi = $newestInvokeResult
 		// 3. vi = $Finstance>>..>>vm
 		// 4. vi = $Fstatic>>... (this one no need to replace anything)
+		Operation newO = oToAdd.clone();
 		int index = getIndexOfOperationWithLeft(newO.getLeft());
 		// scenario 1
 		if (!newSymbol) {

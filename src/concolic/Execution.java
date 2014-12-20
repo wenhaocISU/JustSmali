@@ -56,6 +56,7 @@ public class Execution {
 			
 			pS_0 = concreteExecution(pS_0, eventHandlerMethod);
 			pathSummaries.add(pS_0);
+			System.out.println("============== ToDoPathList size : " + toDoPathList.size());
 			
 /*			int index = 1;
 			for (ToDoPath t : toDoPathList) {
@@ -102,7 +103,7 @@ public class Execution {
 		String jdbNewLine = "";
 		while (!jdbNewLine.equals("TIMEOUT")) {
 			if (!jdbNewLine.equals(""))
-				System.out.println("\n[J]" + jdbNewLine);
+				System.out.println("[J]" + jdbNewLine);
 			//Processing A Breakpoint Hit
 			if (jdbNewLine.contains("Breakpoint hit: ")) {
 				// 1. Recognize the newly hit StaticStmt, and check for errors
@@ -255,6 +256,10 @@ public class Execution {
 	private void symbolicallyFinishingUp() throws Exception{
 		int counter = 1;
 		while (toDoPathList.size()>0) {
+			System.out.println("---- toDoPathList before the " + counter + " Symbolic Run ----");
+			for (ToDoPath t : toDoPathList)
+				this.printOutToDoPath(t);
+			System.out.println("\n\n");
 			ToDoPath toDoPath = toDoPathList.get(toDoPathList.size()-1);
 			toDoPathList.remove(toDoPathList.size()-1);
 			PathSummary initPS = new PathSummary();
@@ -270,11 +275,6 @@ public class Execution {
 		String className = m.getDeclaringClass(staticApp).getJavaName();
 		StaticStmt s = allStmts.get(0);
 		while (true) {
-			System.out.println("\n[Current Stmt] " + m.getSmaliSignature() + "  " + s.getSourceLineNumber() + "  " + s.getTheStmt());
-			if (s.hasOperation() || s.generatesSymbol())
-				System.out.println("     " + s.getOperation().toString());
-			System.out.println("[Current PS]");
-			printOutPathSummary(pS);
 			pS.addExecutionLog(className + ":" + s.getSourceLineNumber());
 			if (s.endsMethod()) {
 				if (s instanceof ReturnStmt && !((ReturnStmt) s).returnsVoid())
@@ -316,6 +316,7 @@ public class Execution {
 						toDo.setPathChoices(pS.getPathChoices());
 						toDo.setTargetPathStmtInfo(stmtInfo);
 						toDoPathList.add(toDo);
+						printOutToDoPath(toDo);
 					}
 					pS.addPathChoice(stmtInfo + "," + nextStmtLineNumber);
 					pS.updatePathCondition(cond);
@@ -335,6 +336,7 @@ public class Execution {
 							toDo.setPathChoices(pS.getPathChoices());
 							toDo.setTargetPathStmtInfo(stmtInfo);
 							toDoPathList.add(toDo);
+							printOutToDoPath(toDo);
 						}
 					}
 					else if (pastChoice.equals("FlowThrough")){
@@ -390,7 +392,7 @@ public class Execution {
 			int nextStmtID = s.getStmtID()+1;
 			s = allStmts.get(nextStmtID);
 		}
-		printOutPathSummary(pS);
+		//printOutPathSummary(pS);
 		return pS;
 	}
 	
@@ -443,6 +445,15 @@ public class Execution {
 			System.out.println("  " + pC);
 		System.out.println("========================");
 	}
+	
+	private void printOutToDoPath(ToDoPath toDoPath) {
+		System.out.println("[PastChoice]");
+		for (String s : toDoPath.getPathChoices())
+			System.out.println(" " + s);
+		System.out.println("[Turning Point]");
+		System.out.println(" " + toDoPath.getTargetPathStmtInfo() + "," + toDoPath.getNewDirection() + "\n");
+	}
+	
 	
 	private ArrayList<Operation> initSymbolicStates(StaticMethod targetM) {
 		ArrayList<Operation> symbolicStates = new ArrayList<Operation>();

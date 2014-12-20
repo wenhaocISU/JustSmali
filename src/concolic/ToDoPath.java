@@ -10,6 +10,7 @@ public class ToDoPath {
 	private int newDirection = -1;
 	private boolean shouldFlowThroughThisSwitchStmt = false;
 	
+	
 	public ArrayList<String> getPathChoices() {
 		return pathChoices;
 	}
