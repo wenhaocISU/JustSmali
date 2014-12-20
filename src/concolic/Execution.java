@@ -370,12 +370,16 @@ public class Execution {
 					symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());
 					pS.addSymbolicState(symbolOFromJavaAPI);
 				}
-				else if (s instanceof GotoStmt) {
-					GotoStmt gS = (GotoStmt) s;
-					s = m.getFirstStmtOfBlock(gS.getTargetLabel());
-					continue;
-				}
+
 			}
+			else if (s instanceof GotoStmt) {
+				//System.out.println("[GOTO] " + s.getTheStmt());
+				GotoStmt gS = (GotoStmt) s;
+				s = m.getFirstStmtOfBlock(gS.getTargetLabel());
+				//System.out.println("[NEXT STMT] " + s.getTheStmt());
+				continue;
+			}
+			//System.out.println("[Stmt]" + s.getTheStmt());
 			int nextStmtID = s.getStmtID()+1;
 			s = allStmts.get(nextStmtID);
 		}

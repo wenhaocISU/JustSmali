@@ -164,7 +164,6 @@ public class Parser {
 							s.setOriginalLineNumber(originalLineNumber);
 							originalLineNumber = -1;
 						}
-						//TODO add '.local vi, wenhaovi:I' for SwitchStmt
 						if (s instanceof SwitchStmt) {
 							String vName = ((SwitchStmt) s).getSwitchV();
 							classSmali = classSmali.substring(0, classSmali.length()-1);
@@ -400,6 +399,8 @@ public class Parser {
 				s.setNewInstance(true);
 			else s.setNewArray(true);
 			s.setArguments(line.substring(line.indexOf(" ")+1));
+			String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
+			
 			return s;
 		}
 		if (StmtFormat.isReturn(line)) {
