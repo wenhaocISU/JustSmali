@@ -336,7 +336,12 @@ public class Execution {
 					}
 					else {
 						int value = Integer.parseInt(pastChoice);
-						nextStmtLineNumber = switchMap.get(value);
+						if (switchMap.containsKey(value)) {
+							nextStmtLineNumber = switchMap.get(value);
+						}
+						else {
+							nextStmtLineNumber = swS.getFlowThroughLineNumber(m);
+						}
 						Condition cnd = new Condition();
 						cnd.setLeft(swS.getSwitchV());
 						cnd.setOp("=");
