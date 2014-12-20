@@ -253,11 +253,13 @@ public class Execution {
 	}
 	
 	private void symbolicallyFinishingUp() throws Exception{
+		int counter = 1;
 		while (toDoPathList.size()>0) {
 			ToDoPath toDoPath = toDoPathList.get(toDoPathList.size()-1);
 			toDoPathList.remove(toDoPathList.size()-1);
 			PathSummary initPS = new PathSummary();
 			initPS.setSymbolicStates(initSymbolicStates(eventHandlerMethod));
+			System.out.println("[Symbolic Execution No." + counter++ + "]");
 			symbolicExecution(initPS, eventHandlerMethod, toDoPath);
 		}
 	}
@@ -268,6 +270,11 @@ public class Execution {
 		String className = m.getDeclaringClass(staticApp).getJavaName();
 		StaticStmt s = allStmts.get(0);
 		while (true) {
+			System.out.println("\n[Current Stmt] " + m.getSmaliSignature() + "  " + s.getSourceLineNumber() + "  " + s.getTheStmt());
+			if (s.hasOperation() || s.generatesSymbol())
+				System.out.println("     " + s.getOperation().toString());
+			System.out.println("[Current PS]");
+			printOutPathSummary(pS);
 			pS.addExecutionLog(className + ":" + s.getSourceLineNumber());
 			if (s.endsMethod()) {
 				if (s instanceof ReturnStmt && !((ReturnStmt) s).returnsVoid())

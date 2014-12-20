@@ -94,7 +94,7 @@ public class PathSummary implements Serializable{
 	public void updateReturnSymbol(String vName) throws Exception{
 		int index = getIndexOfOperationWithLeft(vName);
 		if (index < 0)
-			throw (new Exception("Can't find the assignment of returned variable from symbolicStates"));
+			throw (new Exception("Can't find the assignment of returned variable '" + vName + "'from symbolicStates"));
 		Operation theAssignO = this.symbolicStates.get(index);
 		theAssignO.setLeft("$newestInvokeResult");
 		if (theAssignO.isNoOp()) {
