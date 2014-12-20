@@ -152,16 +152,18 @@ public class Execution {
 						ArrayList<Integer> remainingValues = new ArrayList<Integer>();
 						SwitchStmt swS = (SwitchStmt) lastPathStmt;
 						Map<Integer, Integer> switchMap = swS.getSwitchMap(m);
-						int realValue = Integer.parseInt(this.getConcreteValue(swS.getSwitchV()));
-						pS.addPathChoice(lastPathStmtInfo + "," + realValue);
+						int concreteValue = Integer.parseInt(this.getConcreteValue(swS.getSwitchV()));
+
+						
 						if (!switchMap.containsValue(newHitLine) && newHitLine != swS.getFlowThroughLineNumber(m))
 							throw (new Exception("SwitchStmt followd by unexpected Line..."));
-						if (switchMap.containsKey(realValue) && switchMap.get(realValue) != newHitLine)
+						if (switchMap.containsKey(concreteValue) && switchMap.get(concreteValue) != newHitLine)
 							throw (new Exception("SwitchStmt value and jumped line does not match..."));
+
 						if (switchMap.containsValue(newHitLine)) { // one of switch lines
 							cond.setLeft(swS.getSwitchV());
 							cond.setOp("=");
-							cond.setRight("" + realValue);
+							cond.setRight("" + concreteValue);
 							pS.updatePathCondition(cond);
 						}
 						else {
@@ -170,7 +172,7 @@ public class Execution {
 						}
 						//TODO this part need fixing. the remaining value should also include a value or a condition that make it flows through
 						for (Integer v : switchMap.keySet())
-							if (v != realValue)
+							if (v != concreteValue)
 								remainingValues.add(v);
 						Collections.reverse(remainingValues);
 						for (int i : remainingValues) {
