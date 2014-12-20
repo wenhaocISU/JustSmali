@@ -154,13 +154,12 @@ public class Execution {
 						Map<Integer, Integer> switchMap = swS.getSwitchMap(m);
 						int concreteValue = Integer.parseInt(this.getConcreteValue(swS.getSwitchV()));
 
-						
 						if (!switchMap.containsValue(newHitLine) && newHitLine != swS.getFlowThroughLineNumber(m))
 							throw (new Exception("SwitchStmt followd by unexpected Line..."));
 						if (switchMap.containsKey(concreteValue) && switchMap.get(concreteValue) != newHitLine)
 							throw (new Exception("SwitchStmt value and jumped line does not match..."));
-
-						if (switchMap.containsValue(newHitLine)) { // one of switch lines
+						// update Path Condition based on the value
+						if (switchMap.containsValue(newHitLine)) {
 							cond.setLeft(swS.getSwitchV());
 							cond.setOp("=");
 							cond.setRight("" + concreteValue);
@@ -170,11 +169,21 @@ public class Execution {
 							for (Condition cnd : swS.getFlowThroughConditions())
 								pS.updatePathCondition(cnd);
 						}
-						//TODO this part need fixing. the remaining value should also include a value or a condition that make it flows through
+						// collect remaining values
 						for (Integer v : switchMap.keySet())
 							if (v != concreteValue)
 								remainingValues.add(v);
 						Collections.reverse(remainingValues);
+						
+						// if this is not a flow through, need to add a special ToDoPath to tell later execution to flow through
+						if (!switchMap.containsKey(concreteValue)) {
+							ToDoPath toFlowThrough = new ToDoPath();
+							toFlowThrough.setShouldFlowThroughThisSwitchStmt(true);
+							toFlowThrough.setPathChoices(pS.getPathChoices());
+							toFlowThrough.setTargetPathStmtInfo(lastPathStmtInfo);
+							toDoPathList.add(toFlowThrough);
+						}
+						// build ToDoPath for the switch values
 						for (int i : remainingValues) {
 							ToDoPath toDoPath = new ToDoPath();
 							toDoPath.setNewDirection(i);
@@ -182,6 +191,7 @@ public class Execution {
 							toDoPath.setTargetPathStmtInfo(lastPathStmtInfo);
 							toDoPathList.add(toDoPath);
 						}
+						pS.addPathChoice(lastPathStmtInfo + "," + concreteValue);
 					}
 					newPathCondition = false;
 					lastPathStmt = new StaticStmt();
@@ -271,15 +281,15 @@ public class Execution {
 			}
 			else if (s.updatesPathCondition()) {
 				String stmtInfo = className + ":" + s.getSourceLineNumber();
-				int pastChoice = toDoPath.getPastChoice(stmtInfo);
+				String pastChoice = toDoPath.getPastChoice(stmtInfo);
 				int nextStmtLineNumber = -1;
 				if (s instanceof IfStmt) {
 					//here pastChoice is the line number
 					IfStmt ifS = (IfStmt) s;
 					Condition cond = ifS.getJumpCondition();
 					// need to follow past choice
-					if (pastChoice > -1) {
-						nextStmtLineNumber = pastChoice;
+					if (!pastChoice.equals("")) {
+						nextStmtLineNumber = Integer.parseInt(pastChoice);
 						if (nextStmtLineNumber != ifS.getJumpTargetLineNumber(m))
 							cond.reverseCondition();
 					}
@@ -303,33 +313,48 @@ public class Execution {
 					pS.updatePathCondition(cond);
 				}
 				else if (s instanceof SwitchStmt) {
-					//TODO maybe redo this whole 'if (s.updatesPathCondition())' section
-					boolean shouldFollowPast = toDoPath.hasPastChoice(stmtInfo);
-					int nextValue = -1;
-					ArrayList<Integer> remainingValues = new ArrayList<Integer>();
 					SwitchStmt swS = (SwitchStmt) s;
-					if (shouldFollowPast) {
-						nextValue = pastChoice;
-						
+					Map<Integer, Integer> switchMap = swS.getSwitchMap(m);
+					String thisChoice = pastChoice;
+					if (pastChoice.equals("")) {
+						thisChoice = "FlowThrough";
+						nextStmtLineNumber = swS.getFlowThroughLineNumber(m);
+						for (Condition cnd : swS.getFlowThroughConditions())
+							pS.updatePathCondition(cnd);
+						for (int key : switchMap.keySet()) {
+							ToDoPath toDo = new ToDoPath();
+							toDo.setNewDirection(key);
+							toDo.setPathChoices(pS.getPathChoices());
+							toDo.setTargetPathStmtInfo(stmtInfo);
+							toDoPathList.add(toDo);
+						}
 					}
-					else if (toDoPath.getTargetPathStmtInfo().equals(stmtInfo)) {
-						nextValue = toDoPath.getNewDirection();
+					else if (pastChoice.equals("FlowThrough")){
+						nextStmtLineNumber = swS.getFlowThroughLineNumber(m);
+						for (Condition cnd : swS.getFlowThroughConditions())
+							pS.updatePathCondition(cnd);
 					}
 					else {
-						
+						int value = Integer.parseInt(pastChoice);
+						nextStmtLineNumber = switchMap.get(value);
+						Condition cnd = new Condition();
+						cnd.setLeft(swS.getSwitchV());
+						cnd.setOp("=");
+						cnd.setRight(value+"");
+						pS.updatePathCondition(cnd);
 					}
+					pS.addPathChoice(stmtInfo + "," + thisChoice);
 				}
 				s = m.getStmtByLineNumber(nextStmtLineNumber);
 				continue;
 			}
 			else if (s instanceof InvokeStmt) {
-				//TODO samething as the concrete execution? needs redo
 				InvokeStmt iS = (InvokeStmt) s;
 				StaticMethod targetM = staticApp.findMethod(iS.getTargetSig());
 				StaticClass targetC = staticApp.findClassByDexName(iS.getTargetSig().split("->")[0]);
 				if (targetC != null && targetM != null) {
 					PathSummary trimmedPS = trimPSForInvoke(pS, iS.getParams());
-					PathSummary subPS = concreteExecution(trimmedPS, targetM);
+					PathSummary subPS = symbolicExecution(trimmedPS, targetM, toDoPath);
 					pS.mergeWithInvokedPS(subPS);
 				}
 				else if (iS.resultsMoved()) {

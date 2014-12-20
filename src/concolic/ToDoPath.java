@@ -5,8 +5,10 @@ import java.util.ArrayList;
 public class ToDoPath {
 
 	private ArrayList<String> pathChoices = new ArrayList<String>();
+	private ArrayList<String> pastSwitchStmtsThatFlowedThrough = new ArrayList<String>();
 	private String targetPathStmtInfo = "";
 	private int newDirection = -1;
+	private boolean shouldFlowThroughThisSwitchStmt = false;
 	
 	public ArrayList<String> getPathChoices() {
 		return pathChoices;
@@ -33,23 +35,34 @@ public class ToDoPath {
 		this.newDirection = newDirection;
 	}
 	
-	public int getPastChoice(String pathStmtInfo) {
+	public String getPastChoice(String pathStmtInfo) {
 		for (String pC : this.pathChoices) {
 			String stmtInfo = pC.split(",")[0];
 			String choice = pC.split(",")[1];
 			if (stmtInfo.equals(pathStmtInfo))
-				return Integer.parseInt(choice);
+				return choice;
 		}
-		return -1;
+		return "";
 	}
-	
-	public boolean hasPastChoice(String pathStmtInfo) {
-		for (String pC : this.pathChoices) {
-			String stmtInfo = pC.split(",")[0];
-			if (stmtInfo.equals(pathStmtInfo))
-				return true;
-		}
-		return false;
+
+	public boolean shouldFlowThroughThisSwitchStmt() {
+		return shouldFlowThroughThisSwitchStmt;
+	}
+
+	public void setShouldFlowThroughThisSwitchStmt(boolean shouldFlowThroughThisSwitchStmt) {
+		this.shouldFlowThroughThisSwitchStmt = shouldFlowThroughThisSwitchStmt;
+	}
+
+	public ArrayList<String> getPastSwitchStmtsThatFlowedThrough() {
+		return pastSwitchStmtsThatFlowedThrough;
+	}
+
+	public void setPastSwitchStmtsThatFlowedThrough(ArrayList<String> pastSwitchStmtsThatFlowedThrough) {
+		this.pastSwitchStmtsThatFlowedThrough = pastSwitchStmtsThatFlowedThrough;
+	}
+
+	public void addPastSwitchStmtThatFlowedThrough(String switchStmtInfo) {
+		this.pastSwitchStmtsThatFlowedThrough.add(switchStmtInfo);
 	}
 	
 }
