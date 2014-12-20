@@ -399,8 +399,15 @@ public class Parser {
 				s.setNewInstance(true);
 			else s.setNewArray(true);
 			s.setArguments(line.substring(line.indexOf(" ")+1));
-			String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
-			
+			if (s.isNewInstance()) {
+				s.setHasOperation(true);
+				String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
+				Operation o = new Operation();
+				o.setLeft(arguments[0]);
+				o.setNoOp(true);
+				o.setRightA("#new>>" + arguments[1]);
+				s.setOperation(o);
+			}
 			return s;
 		}
 		if (StmtFormat.isReturn(line)) {

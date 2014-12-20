@@ -117,9 +117,9 @@ public class Execution {
 				int newHitLine = Integer.parseInt(lineInfo.substring(lineInfo.indexOf("=")+1, lineInfo.indexOf(" ")));
 				StaticClass c = staticApp.findClassByJavaName(cN);
 				if (c == null)
-					throw (new Exception("Can't find StaticClass object of class " + cN));
+					throw (new Exception("Can't find StaticClass object of class " + cN + ". In " + bpInfo));
 				if (!m.getName().equals(mN))
-					throw (new Exception("Mismatch between current StaticMethod and new Breakpoint method"));
+					throw (new Exception("Mismatch between current StaticMethod and new Breakpoint method. In " + bpInfo));
 				StaticStmt s = m.getStmtByLineNumber(newHitLine);
 				if (s == null)
 					throw (new Exception("Can't find StaticStmt object of " + cN + ":" + newHitLine));
@@ -140,7 +140,7 @@ public class Execution {
 							cond.reverseCondition();
 							remainingLine = jumpLine;
 						}
-						else throw (new Exception("IfStmt followed by unexpected Line..."));
+						else throw (new Exception("IfStmt followed by unexpected Line... " + bpInfo));
 						ToDoPath toDoPath = new ToDoPath();
 						toDoPath.setNewDirection(remainingLine);
 						toDoPath.setPathChoices(pS.getPathChoices());
@@ -156,9 +156,9 @@ public class Execution {
 						int concreteValue = Integer.parseInt(this.getConcreteValue(swS.getSwitchV()));
 
 						if (!switchMap.containsValue(newHitLine) && newHitLine != swS.getFlowThroughLineNumber(m))
-							throw (new Exception("SwitchStmt followd by unexpected Line..."));
+							throw (new Exception("SwitchStmt followd by unexpected Line..." + bpInfo));
 						if (switchMap.containsKey(concreteValue) && switchMap.get(concreteValue) != newHitLine)
-							throw (new Exception("SwitchStmt value and jumped line does not match..."));
+							throw (new Exception("SwitchStmt value and jumped line does not match..." + bpInfo));
 						// update Path Condition based on the value
 						if (switchMap.containsValue(newHitLine)) {
 							cond.setLeft(swS.getSwitchV());
