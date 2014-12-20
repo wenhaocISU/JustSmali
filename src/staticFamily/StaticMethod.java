@@ -235,6 +235,14 @@ public class StaticMethod  implements Serializable{
 		}
 		return -1;
 	}
+	
+	public StaticStmt getFirstStmtOfBlock(String label) {
+		for (StaticStmt s : smaliStmts) {
+			if (s.getBlockLabel().getNormalLabels().contains(label))
+				return s;
+		}
+		return null;
+	}
 
 	public ArrayList<PathSummary> getPathSummaries() {
 		return pathSummaries;

@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
+import smali.stmt.GotoStmt;
 import smali.stmt.IfStmt;
 import smali.stmt.InvokeStmt;
 import smali.stmt.ReturnStmt;
@@ -368,6 +369,11 @@ public class Execution {
 					symbolOFromJavaAPI.setNoOp(true);
 					symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());
 					pS.addSymbolicState(symbolOFromJavaAPI);
+				}
+				else if (s instanceof GotoStmt) {
+					GotoStmt gS = (GotoStmt) s;
+					s = m.getFirstStmtOfBlock(gS.getTargetLabel());
+					continue;
 				}
 			}
 			int nextStmtID = s.getStmtID()+1;
