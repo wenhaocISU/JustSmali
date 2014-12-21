@@ -71,6 +71,16 @@ public class SwitchStmt extends StaticStmt{
 		return m.getSmaliStmts().get(getStmtID()+1).getSourceLineNumber();
 	}
 	
+	public Condition getSwitchCondition(int value) {
+		if (!this.switchMap.containsKey(value))
+			return null;
+		Condition result = new Condition();
+		result.setLeft(getSwitchV());
+		result.setOp("=");
+		result.setRight(value+"");
+		return result;
+	}
+	
 	public ArrayList<Condition> getFlowThroughConditions() {
 		ArrayList<Condition> result = new ArrayList<Condition>();
 		for (int value : this.switchMap.keySet()) {

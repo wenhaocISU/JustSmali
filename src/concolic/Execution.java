@@ -58,14 +58,14 @@ public class Execution {
 			pathSummaries.add(pS_0);
 			System.out.println("============== ToDoPathList size : " + toDoPathList.size());
 			
-/*			int index = 1;
+			int index = 1;
 			for (ToDoPath t : toDoPathList) {
 				System.out.println("\nToDoPath " + index++);
 				System.out.println("[TargetStmtInfo] " + t.getTargetPathStmtInfo());
 				System.out.println("[NewDirection]   " + t.getNewDirection());
-			}*/
+			}
 			
-			symbolicallyFinishingUp();
+			//symbolicallyFinishingUp();
 			
 			jdb.exit();
 			
@@ -127,73 +127,40 @@ public class Execution {
 				// 2. Process each StaticStmt
 				// 2-1. Last StaticStmt is IfStmt or SwitchStmt, need to update PathCondition
 				if (newPathCondition) {
-					Condition cond = new Condition();
-					String lastPathStmtInfo = pS.getExecutionLog().get(pS.getExecutionLog().size()-1);
+					String lastPathStmtInfo = cN + ":" + lastPathStmt.getSourceLineNumber();
 					if (lastPathStmt instanceof IfStmt) {
 						IfStmt ifS = (IfStmt) lastPathStmt;
-						cond = ifS.getJumpCondition();
-						int jumpLine = ifS.getJumpTargetLineNumber(m);
-						int flowThroughLine = ifS.getFlowThroughTargetLineNumber(m);
 						int remainingLine = -1;
-						if (newHitLine == jumpLine)
-							remainingLine = flowThroughLine;
-						else if (newHitLine == flowThroughLine){
+						Condition cond = ifS.getJumpCondition();
+						if (newHitLine == ifS.getJumpTargetLineNumber(m))
+							remainingLine = ifS.getFlowThroughTargetLineNumber(m);
+						else if (newHitLine == ifS.getFlowThroughTargetLineNumber(m)) {
+							remainingLine = ifS.getJumpTargetLineNumber(m);
 							cond.reverseCondition();
-							remainingLine = jumpLine;
 						}
-						else throw (new Exception("IfStmt followed by unexpected Line... " + bpInfo));
-						ToDoPath toDoPath = new ToDoPath();
-						toDoPath.setNewDirection(remainingLine);
-						toDoPath.setPathChoices(pS.getPathChoices());
-						toDoPath.setTargetPathStmtInfo(lastPathStmtInfo);
-						toDoPathList.add(toDoPath);
+						else throw (new Exception("Unexpected Line Number Following IfStmt" + bpInfo));
+						pushNewToDoPath(pS.getPathChoices(), lastPathStmtInfo, "" + remainingLine);
 						pS.addPathChoice(lastPathStmtInfo + "," + newHitLine);
 						pS.updatePathCondition(cond);
 					}
 					else if (lastPathStmt instanceof SwitchStmt) {
-						ArrayList<Integer> remainingValues = new ArrayList<Integer>();
 						SwitchStmt swS = (SwitchStmt) lastPathStmt;
-						Map<Integer, Integer> switchMap = swS.getSwitchMap(m);
-						int concreteValue = Integer.parseInt(this.getConcreteValue(swS.getSwitchV()));
-
-						if (!switchMap.containsValue(newHitLine) && newHitLine != swS.getFlowThroughLineNumber(m))
-							throw (new Exception("SwitchStmt followd by unexpected Line..." + bpInfo));
-						if (switchMap.containsKey(concreteValue) && switchMap.get(concreteValue) != newHitLine)
-							throw (new Exception("SwitchStmt value and jumped line does not match..." + bpInfo));
-						// update Path Condition based on the value
-						if (switchMap.containsValue(newHitLine)) {
-							cond.setLeft(swS.getSwitchV());
-							cond.setOp("=");
-							cond.setRight("" + concreteValue);
-							pS.updatePathCondition(cond);
+						ArrayList<String> remainingCases = new ArrayList<String>();
+						int switchVValue = Integer.parseInt(getConcreteValue(swS.getSwitchV()));
+						for (int anyCase : swS.getSwitchMap(m).keySet())
+							if (anyCase != newHitLine)
+								remainingCases.add(anyCase+"");
+						if (newHitLine == swS.getFlowThroughLineNumber(m)) {
+							for (Condition cond : swS.getFlowThroughConditions())
+								pS.updatePathCondition(cond);
 						}
 						else {
-							for (Condition cnd : swS.getFlowThroughConditions())
-								pS.updatePathCondition(cnd);
+							pS.updatePathCondition(swS.getSwitchCondition(switchVValue));
+							remainingCases.add("FlowThrough");
 						}
-						// collect remaining values
-						for (Integer v : switchMap.keySet())
-							if (v != concreteValue)
-								remainingValues.add(v);
-						Collections.reverse(remainingValues);
-						
-						// if this is not a flow through, need to add a special ToDoPath to tell later execution to flow through
-						if (!switchMap.containsKey(concreteValue)) {
-							ToDoPath toFlowThrough = new ToDoPath();
-							toFlowThrough.setShouldFlowThroughThisSwitchStmt(true);
-							toFlowThrough.setPathChoices(pS.getPathChoices());
-							toFlowThrough.setTargetPathStmtInfo(lastPathStmtInfo);
-							toDoPathList.add(toFlowThrough);
-						}
-						// build ToDoPath for the switch values
-						for (int i : remainingValues) {
-							ToDoPath toDoPath = new ToDoPath();
-							toDoPath.setNewDirection(i);
-							toDoPath.setPathChoices(pS.getPathChoices());
-							toDoPath.setTargetPathStmtInfo(lastPathStmtInfo);
-							toDoPathList.add(toDoPath);
-						}
-						pS.addPathChoice(lastPathStmtInfo + "," + concreteValue);
+						for (String remainingCase : remainingCases)
+							pushNewToDoPath(pS.getPathChoices(), lastPathStmtInfo, remainingCase);
+						pS.addPathChoice(lastPathStmtInfo + "," + switchVValue);
 					}
 					newPathCondition = false;
 					lastPathStmt = new StaticStmt();
@@ -253,6 +220,8 @@ public class Execution {
 		return pS;
 	}
 	
+
+
 	private void symbolicallyFinishingUp() throws Exception{
 		int counter = 1;
 		while (toDoPathList.size()>0) {
@@ -303,7 +272,7 @@ public class Execution {
 					}
 					// need to follow new direction
 					else if (toDoPath.getTargetPathStmtInfo().equals(stmtInfo)) {
-						nextStmtLineNumber = toDoPath.getNewDirection();
+						nextStmtLineNumber = Integer.parseInt(toDoPath.getNewDirection());
 						if (nextStmtLineNumber != ifS.getJumpTargetLineNumber(m))
 							cond.reverseCondition();
 					}
@@ -312,7 +281,7 @@ public class Execution {
 						nextStmtLineNumber = ifS.getJumpTargetLineNumber(m);
 						int remainingPath = ifS.getFlowThroughTargetLineNumber(m);
 						ToDoPath toDo = new ToDoPath();
-						toDo.setNewDirection(remainingPath);
+						toDo.setNewDirection("" + remainingPath);
 						toDo.setPathChoices(pS.getPathChoices());
 						toDo.setTargetPathStmtInfo(stmtInfo);
 						toDoPathList.add(toDo);
@@ -332,7 +301,7 @@ public class Execution {
 							pS.updatePathCondition(cnd);
 						for (int key : switchMap.keySet()) {
 							ToDoPath toDo = new ToDoPath();
-							toDo.setNewDirection(key);
+							toDo.setNewDirection("" + key);
 							toDo.setPathChoices(pS.getPathChoices());
 							toDo.setTargetPathStmtInfo(stmtInfo);
 							toDoPathList.add(toDo);
@@ -429,7 +398,14 @@ public class Execution {
 		return trimmedPS;
 	}
 
-
+	private void pushNewToDoPath(ArrayList<String> pathChoices, String pathStmtInfo, String newDirection) {
+		ToDoPath toDo = new ToDoPath();
+		toDo.setPathChoices(pathChoices);
+		toDo.setTargetPathStmtInfo(pathStmtInfo);
+		toDo.setNewDirection(newDirection);
+	}
+	
+	
 	private void printOutPathSummary(PathSummary pS) {
 		System.out.println("\n Execution Log: ");
 		for (String s : pS.getExecutionLog())
