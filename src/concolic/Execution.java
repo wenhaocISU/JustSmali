@@ -264,9 +264,14 @@ public class Execution {
 				int nextLineNumber = -1;
 				if (s instanceof IfStmt) {
 					IfStmt ifS = (IfStmt) s;
-					if (pastChoice.equals("")) {
+					if (stmtInfo.equals(toDoPath.getTargetPathStmtInfo())) {
 						nextLineNumber = ifS.getJumpTargetLineNumber(m);
-						//pushNewToDoPath(pS.getPathChoices(), stmtInfo, "" + ifS.getFlowThroughTargetLineNumber(m));
+						pS.addPathChoice(stmtInfo + "," + nextLineNumber);
+						pS.updatePathCondition(ifS.getJumpCondition());
+					}
+					else if (pastChoice.equals("")) {
+						nextLineNumber = ifS.getJumpTargetLineNumber(m);
+						pushNewToDoPath(pS.getPathChoices(), stmtInfo, "" + ifS.getFlowThroughTargetLineNumber(m));
 						pS.addPathChoice(stmtInfo + "," + nextLineNumber);
 						pS.updatePathCondition(ifS.getJumpCondition());
 					}
@@ -283,32 +288,37 @@ public class Execution {
 					SwitchStmt swS = (SwitchStmt) s;
 					Map<Integer, Integer> switchMap = swS.getSwitchMap(m);
 					String valueToTake = "";
-					if (pastChoice.equals("FlowThrough")) {
+					boolean isTurningPoint = toDoPath.getTargetPathStmtInfo().equals(stmtInfo);
+					boolean flowsThrough = false;
+					if (isTurningPoint)
+						valueToTake = toDoPath.getNewDirection();
+					else if (pastChoice.equals("FlowThrough")) {
 						valueToTake = "FlowThrough";
-						nextLineNumber = swS.getFlowThroughLineNumber(m);
-						for (Condition cond : swS.getFlowThroughConditions())
-							pS.updatePathCondition(cond);
+						flowsThrough = true;
 					}
 					else if (pastChoice.equals("")) {
 						valueToTake = "FlowThrough";
-						nextLineNumber = swS.getFlowThroughLineNumber(m);
-						for (Condition cond : swS.getFlowThroughConditions())
-							pS.updatePathCondition(cond);
-						for (int caseValue : switchMap.keySet())
-							this.pushNewToDoPath(pS.getPathChoices(), stmtInfo, "" + caseValue);
+						flowsThrough = true;
 					}
 					else {
 						valueToTake = pastChoice;
-						if (switchMap.keySet().contains(valueToTake)) {
-							nextLineNumber = switchMap.get(Integer.parseInt(valueToTake));
-							pS.updatePathCondition(swS.getSwitchCondition(Integer.parseInt(valueToTake)));
-						}
-						else  {
-							nextLineNumber = swS.getFlowThroughLineNumber(m);
-							for (Condition cond : swS.getFlowThroughConditions())
-								pS.updatePathCondition(cond);
-						}
 					}
+					if (valueToTake.equals("FlowThrough")) {
+						nextLineNumber = swS.getFlowThroughLineNumber(m);
+					}
+					else if (switchMap.containsKey(Integer.parseInt(valueToTake))) {
+						nextLineNumber = switchMap.get(Integer.parseInt(valueToTake));
+					}
+					else {
+						nextLineNumber = swS.getFlowThroughLineNumber(m);
+						flowsThrough = true;
+					}
+					if (flowsThrough) {
+						for (Condition cond : swS.getFlowThroughConditions())
+							pS.updatePathCondition(cond);
+					}
+					else
+						pS.updatePathCondition(swS.getSwitchCondition(Integer.parseInt(valueToTake)));
 					pS.addPathChoice(stmtInfo + "," + valueToTake);
 				}
 				s = m.getStmtByLineNumber(nextLineNumber);
