@@ -2,6 +2,7 @@ package concolic;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 
 import smali.stmt.GotoStmt;
 import smali.stmt.IfStmt;
@@ -63,7 +64,7 @@ public class Execution {
 				System.out.println("[NewDirection]   " + t.getNewDirection());
 			}
 			
-			//symbolicallyFinishingUp();
+			symbolicallyFinishingUp();
 			
 			jdb.exit();
 			
@@ -213,9 +214,10 @@ public class Execution {
 				throw (new Exception("Jdb might have crashed."));
 			Thread.sleep(100);
 		}
-		System.out.println("\n==== Finished Executing " + m.getSmaliSignature());
-		if (inMainMethod)
+		if (inMainMethod) {
 			printOutPathSummary(pS);
+			System.out.println("\n==== Finished Executing " + m.getSmaliSignature());
+		}
 		return pS;
 	}
 	
@@ -225,20 +227,21 @@ public class Execution {
 		int counter = 1;
 		while (toDoPathList.size()>0) {
 			System.out.println("\n=================================\nSymbolic Execution No." + counter++ + "");
-			System.out.println("[Current ToDoPathList]");
-			for (ToDoPath t : toDoPathList)
-				printOutToDoPath(t);
 			ToDoPath toDoPath = toDoPathList.get(toDoPathList.size()-1);
+			System.out.print("toDoPathList size change from " + toDoPathList.size());
 			toDoPathList.remove(toDoPathList.size()-1);
+			System.out.println(" " + toDoPathList.size());
+			printOutToDoPath(toDoPath);
 			PathSummary initPS = new PathSummary();
 			initPS.setSymbolicStates(initSymbolicStates(eventHandlerMethod));
 			
-			symbolicExecution(initPS, eventHandlerMethod, toDoPath);
+			symbolicExecution(initPS, eventHandlerMethod, toDoPath, true);
 		}
 	}
 	
-	private PathSummary symbolicExecution(PathSummary pS, StaticMethod m, ToDoPath toDoPath) throws Exception{
-		
+	private PathSummary symbolicExecution(PathSummary pS, StaticMethod m, ToDoPath toDoPath, boolean inMainMethod) throws Exception{
+		if (inMainMethod)
+			System.out.println("[Before symbolic execution, size of toDoPathList]" + toDoPathList.size());
 		ArrayList<StaticStmt> allStmts = m.getSmaliStmts();
 		String className = m.getDeclaringClass(staticApp).getJavaName();
 		StaticStmt s = allStmts.get(0);
@@ -263,7 +266,7 @@ public class Execution {
 					IfStmt ifS = (IfStmt) s;
 					if (pastChoice.equals("")) {
 						nextLineNumber = ifS.getJumpTargetLineNumber(m);
-						pushNewToDoPath(pS.getPathChoices(), stmtInfo, "" + ifS.getFlowThroughTargetLineNumber(m));
+						//pushNewToDoPath(pS.getPathChoices(), stmtInfo, "" + ifS.getFlowThroughTargetLineNumber(m));
 						pS.addPathChoice(stmtInfo + "," + nextLineNumber);
 						pS.updatePathCondition(ifS.getJumpCondition());
 					}
@@ -278,6 +281,7 @@ public class Execution {
 				}
 				else if (s instanceof SwitchStmt) {
 					SwitchStmt swS = (SwitchStmt) s;
+					Map<Integer, Integer> switchMap = swS.getSwitchMap(m);
 					String valueToTake = "";
 					if (pastChoice.equals("FlowThrough")) {
 						valueToTake = "FlowThrough";
@@ -290,14 +294,20 @@ public class Execution {
 						nextLineNumber = swS.getFlowThroughLineNumber(m);
 						for (Condition cond : swS.getFlowThroughConditions())
 							pS.updatePathCondition(cond);
-						// since no past choice to follow, need to build ToDoPath
-						for (int caseValue : swS.getSwitchMap(m).keySet())
+						for (int caseValue : switchMap.keySet())
 							this.pushNewToDoPath(pS.getPathChoices(), stmtInfo, "" + caseValue);
 					}
 					else {
 						valueToTake = pastChoice;
-						nextLineNumber = swS.getSwitchMap(m).get(valueToTake);
-						pS.updatePathCondition(swS.getSwitchCondition(Integer.parseInt(valueToTake)));
+						if (switchMap.keySet().contains(valueToTake)) {
+							nextLineNumber = switchMap.get(Integer.parseInt(valueToTake));
+							pS.updatePathCondition(swS.getSwitchCondition(Integer.parseInt(valueToTake)));
+						}
+						else  {
+							nextLineNumber = swS.getFlowThroughLineNumber(m);
+							for (Condition cond : swS.getFlowThroughConditions())
+								pS.updatePathCondition(cond);
+						}
 					}
 					pS.addPathChoice(stmtInfo + "," + valueToTake);
 				}
@@ -310,7 +320,7 @@ public class Execution {
 				StaticClass targetC = staticApp.findClassByDexName(iS.getTargetSig().split("->")[0]);
 				if (targetC != null && targetM != null) {
 					PathSummary trimmedPS = trimPSForInvoke(pS, iS.getParams());
-					PathSummary subPS = symbolicExecution(trimmedPS, targetM, toDoPath);
+					PathSummary subPS = symbolicExecution(trimmedPS, targetM, toDoPath, false);
 					pS.mergeWithInvokedPS(subPS);
 				}
 				else if (iS.resultsMoved()) {
@@ -323,17 +333,17 @@ public class Execution {
 
 			}
 			else if (s instanceof GotoStmt) {
-				//System.out.println("[GOTO] " + s.getTheStmt());
 				GotoStmt gS = (GotoStmt) s;
 				s = m.getFirstStmtOfBlock(gS.getTargetLabel());
-				//System.out.println("[NEXT STMT] " + s.getTheStmt());
 				continue;
 			}
-			//System.out.println("[Stmt]" + s.getTheStmt());
 			int nextStmtID = s.getStmtID()+1;
 			s = allStmts.get(nextStmtID);
 		}
-		//printOutPathSummary(pS);
+		if (inMainMethod) {
+			//printOutPathSummary(pS);
+			System.out.println("[Remaining TODOPATH] " + toDoPathList.size());
+		}
 		return pS;
 	}
 	
@@ -399,7 +409,7 @@ public class Execution {
 		System.out.println("[PastChoice]");
 		for (String s : toDoPath.getPathChoices())
 			System.out.print("   " + s);
-		System.out.println("[Turning Point]");
+		System.out.println("\n[Turning Point]");
 		System.out.println(" " + toDoPath.getTargetPathStmtInfo() + "," + toDoPath.getNewDirection() + "\n");
 	}
 	
