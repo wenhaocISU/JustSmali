@@ -4,18 +4,18 @@ import java.util.ArrayList;
 
 public class ToDoPath {
 
-	private ArrayList<String> pathChoices = new ArrayList<String>();
+	private ArrayList<String> pastChoices = new ArrayList<String>();
 	private String targetPathStmtInfo = "";
 	private String newDirection = "";
 	
 	
 	public ArrayList<String> getPathChoices() {
-		return pathChoices;
+		return pastChoices;
 	}
 	
 	public void setPathChoices(ArrayList<String> pathChoices) {
-		this.pathChoices = new ArrayList<String>();
-		this.pathChoices.addAll(pathChoices);
+		this.pastChoices = new ArrayList<String>();
+		this.pastChoices.addAll(pathChoices);
 	}
 
 	public String getTargetPathStmtInfo() {
@@ -35,7 +35,7 @@ public class ToDoPath {
 	}
 	
 	public String getPastChoice(String pathStmtInfo) {
-		for (String pC : this.pathChoices) {
+		for (String pC : this.pastChoices) {
 			String stmtInfo = pC.split(",")[0];
 			String choice = pC.split(",")[1];
 			if (stmtInfo.equals(pathStmtInfo))
