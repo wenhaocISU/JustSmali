@@ -403,6 +403,7 @@ public class Execution {
 		toDo.setPathChoices(pathChoices);
 		toDo.setTargetPathStmtInfo(pathStmtInfo);
 		toDo.setNewDirection(newDirection);
+		this.toDoPathList.add(toDo);
 	}
 	
 	
