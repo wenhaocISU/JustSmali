@@ -220,33 +220,30 @@ public class Execution {
 
 
 	private Operation generateJavaAPIReturnOperation(InvokeStmt iS, ArrayList<Operation> symbolicStates) {
-		Operation o = new Operation();
-		o.setLeft("$return");
-		o.setNoOp(true);
-		String right = "{";
+		Operation resultO = new Operation();
+		resultO.setLeft("$return");
+		resultO.setNoOp(true);
+
 		String rawParams = iS.getParams();
-		String oldParams = "{" + rawParams + "}";
-		ArrayList<String> params = new ArrayList<String>();
-		if (!rawParams.contains(", "))	params.add(rawParams);
-		else	params = new ArrayList<String>(Arrays.asList(rawParams.split(", ")));
-		for (int i = 0; i < params.size(); i++) {
-			String p = params.get(i);
-			String newP = "";
-			for (Operation oo : symbolicStates)
-				if (oo.getLeft().equals(p)) {
-					if (oo.isNoOp())
-						newP = oo.getRightA();
-					else newP = oo.getRight();
-					if (i == 0 || i == params.size()-1)
-						right += newP;
-					else right += newP + ", ";
-					break;
-				}
+		ArrayList<String> oldParams = new ArrayList<String>();
+		ArrayList<String> newParams = new ArrayList<String>();
+		if (!rawParams.contains(", "))	oldParams.add(rawParams);
+		else	oldParams = new ArrayList<String>(Arrays.asList(rawParams.split(", ")));
+		for (String oldp : oldParams)
+			for (Operation o : symbolicStates) {
+				if (o.getLeft().equals(oldp))
+					newParams.add(o.getRight());
+				break;
+			}
+		
+		String newParam = "{" + newParams.get(0);
+		for (int i = 1; i < newParams.size(); i++) {
+			newParam += ", " + newParams.get(i);
 		}
-		right += "}";
-		o.setRightA(iS.getTheStmt().replace(oldParams, right));
-		System.out.println("[NEWO] " + o.toString());
-		return o;
+		newParam += "}";
+		resultO.setRightA("#" + iS.getInvokeType() + ">>" + iS.getTargetSig() + ">>" + newParam);
+		System.out.println("[NEWO] " + resultO.toString());
+		return resultO;
 	}
 
 	private void symbolicallyFinishingUp() throws Exception{

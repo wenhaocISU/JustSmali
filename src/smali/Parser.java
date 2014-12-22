@@ -340,6 +340,8 @@ public class Parser {
 		}
 		if (StmtFormat.isInvoke(line)) {
 			InvokeStmt s = new InvokeStmt();
+			String invokeType = line.substring(0, line.indexOf(" "));
+			s.setInvokeType(invokeType);
 			String arguments = line.substring(line.indexOf(" ")+1);
 			String param = arguments.substring(0, arguments.lastIndexOf(", "));
 			param = param.substring(1, param.length()-1);

@@ -7,6 +7,7 @@ public class InvokeStmt extends StaticStmt{
 
 	private String targetSig;
 	private String params;
+	private String invokeType;
 	
 	private boolean resultsMoved;
 
@@ -32,6 +33,14 @@ public class InvokeStmt extends StaticStmt{
 
 	public void setParams(String params) {
 		this.params = params;
+	}
+
+	public String getInvokeType() {
+		return invokeType;
+	}
+
+	public void setInvokeType(String invokeType) {
+		this.invokeType = invokeType;
 	}
 	
 }
