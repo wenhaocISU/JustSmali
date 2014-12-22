@@ -190,11 +190,6 @@ public class Execution {
 						pS.mergeWithInvokedPS(subPS);
 					}
 					else if (iS.resultsMoved()) {
-						//TODO 
-/*						Operation symbolOFromJavaAPI = new Operation();
-						symbolOFromJavaAPI.setLeft("$return");
-						symbolOFromJavaAPI.setNoOp(true);
-						symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());*/
 						Operation symbolOFromJavaAPI = generateJavaAPIReturnOperation(iS, pS.getSymbolicStates());
 						pS.addSymbolicState(symbolOFromJavaAPI);
 					}
@@ -245,11 +240,9 @@ public class Execution {
 	private void symbolicallyFinishingUp() throws Exception{
 		int counter = 1;
 		while (toDoPathList.size()>0) {
-			System.out.println("\n=================================\nSymbolic Execution No." + counter++ + "");
+			System.out.println("[Symbolic Execution No." + counter++ + "]");
 			ToDoPath toDoPath = toDoPathList.get(toDoPathList.size()-1);
-			System.out.print("toDoPathList size change from " + toDoPathList.size());
 			toDoPathList.remove(toDoPathList.size()-1);
-			System.out.println(" " + toDoPathList.size());
 			printOutToDoPath(toDoPath);
 			PathSummary initPS = new PathSummary();
 			initPS.setSymbolicStates(initSymbolicStates(eventHandlerMethod));
@@ -259,8 +252,7 @@ public class Execution {
 	}
 	
 	private PathSummary symbolicExecution(PathSummary pS, StaticMethod m, ToDoPath toDoPath, boolean inMainMethod) throws Exception{
-		if (inMainMethod)
-			System.out.println("[Before symbolic execution, size of toDoPathList]" + toDoPathList.size());
+		
 		ArrayList<StaticStmt> allStmts = m.getSmaliStmts();
 		String className = m.getDeclaringClass(staticApp).getJavaName();
 		StaticStmt s = allStmts.get(0);
@@ -278,18 +270,12 @@ public class Execution {
 				pS.updateSymbolicStates(s.getOperation(), false);
 			}
 			else if (s.updatesPathCondition()) {
-				/////////////junk
-				//System.out.println(" *this stmt is " + className + ":" + s.getSourceLineNumber());
-				//System.out.println(" ----- current ToDoPath -----");
-				//this.printOutToDoPath(toDoPath);
-				//////////////
 				String stmtInfo = className + ":" + s.getSourceLineNumber();
 				String pastChoice = toDoPath.getAPastChoice();
 				String choice = "";
 				ArrayList<Condition> pathConditions = new ArrayList<Condition>();
 				ArrayList<String> remainingDirections = new ArrayList<String>();
 				if (!pastChoice.equals("")) {
-					//System.out.println("*already used up the pastChoices");
 					if (!pastChoice.startsWith(stmtInfo + ","))
 						throw (new Exception("current PathStmt not synced with toDoPath.pastChoice. " + stmtInfo));
 					// haven't arrived target path stmt yet. So follow past choice, do not make new ToDoPath
@@ -298,15 +284,12 @@ public class Execution {
 				else if (toDoPath.getTargetPathStmtInfo().equals(stmtInfo)){
 					// this is the target path stmt
 					choice = stmtInfo + "," + toDoPath.getNewDirection();
-					//System.out.println("*arrived target path stmt, going: " + choice);
 				}
 				else {
 					// already passed target path stmt
 					choice = makeAPathChoice(s, stmtInfo, m);
 					remainingDirections = getRemainingDirections(s, choice, m);
 					for (String remainingDirection : remainingDirections) {
-						//System.out.println(" *choosing to go: " + choice);
-						//System.out.println(" *gotta add that new ToDoPath: " + stmtInfo + "," + remainingDirection);
 						pushNewToDoPath(pS.getPathChoices(), stmtInfo, remainingDirection);
 					}
 				}
@@ -327,11 +310,6 @@ public class Execution {
 					pS.mergeWithInvokedPS(subPS);
 				}
 				else if (iS.resultsMoved()) {
-					//TODO aa
-/*					Operation symbolOFromJavaAPI = new Operation();
-					symbolOFromJavaAPI.setLeft("$return");
-					symbolOFromJavaAPI.setNoOp(true);
-					symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());*/
 					Operation symbolOFromJavaAPI = generateJavaAPIReturnOperation(iS, pS.getSymbolicStates());
 					pS.addSymbolicState(symbolOFromJavaAPI);
 				}
@@ -345,8 +323,7 @@ public class Execution {
 			s = allStmts.get(nextStmtID);
 		}
 		if (inMainMethod) {
-			//printOutPathSummary(pS);
-			System.out.println("[Remaining TODOPATH] " + toDoPathList.size());
+			printOutPathSummary(pS);
 		}
 		return pS;
 	}
