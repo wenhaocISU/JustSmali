@@ -274,12 +274,14 @@ public class Execution {
 				else if (toDoPath.getTargetPathStmtInfo().equals(pastChoice)){
 					// this is the target path stmt
 					choice = stmtInfo + "," + toDoPath.getNewDirection();
+					System.out.println("*arrived target path stmt, going: " + choice);
 				}
 				else {
 					// already passed target path stmt
 					choice = makeAPathChoice(s, stmtInfo, m);
 					remainingDirections = getRemainingDirections(s, choice, m);
 					for (String remainingDirection : remainingDirections) {
+						System.out.println(" *choosing to go: " + choice);
 						System.out.println(" *gotta add that new ToDoPath: " + stmtInfo + "," + remainingDirection);
 						pushNewToDoPath(pS.getPathChoices(), stmtInfo, remainingDirection);
 					}
