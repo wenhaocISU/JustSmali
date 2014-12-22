@@ -230,12 +230,11 @@ public class Execution {
 		if (!rawParams.contains(", "))	oldParams.add(rawParams);
 		else	oldParams = new ArrayList<String>(Arrays.asList(rawParams.split(", ")));
 		for (String oldp : oldParams)
-			for (Operation o : symbolicStates) {
-				if (o.getLeft().equals(oldp))
+			for (Operation o : symbolicStates)
+				if (o.getLeft().equals(oldp)) {
 					newParams.add(o.getRight());
-				break;
-			}
-		
+					break;
+				}
 		String newParam = "{" + newParams.get(0);
 		for (int i = 1; i < newParams.size(); i++) {
 			newParam += ", " + newParams.get(i);
