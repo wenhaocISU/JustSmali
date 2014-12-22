@@ -77,7 +77,7 @@ public class SwitchStmt extends StaticStmt{
 		Condition result = new Condition();
 		result.setLeft(getSwitchV());
 		result.setOp("=");
-		result.setRight(value+"");
+		result.setRight("#" + value);
 		return result;
 	}
 	
@@ -87,7 +87,7 @@ public class SwitchStmt extends StaticStmt{
 			Condition cond = new Condition();
 			cond.setLeft(getSwitchV());
 			cond.setOp("!=");
-			cond.setRight("" + value);
+			cond.setRight("#" + value);
 			result.add(cond);
 		}
 		return result;
