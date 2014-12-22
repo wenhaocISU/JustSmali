@@ -96,12 +96,12 @@ public class PathSummary implements Serializable{
 		if (index < 0)
 			throw (new Exception("Can't find the assignment of returned variable '" + vName + "'from symbolicStates"));
 		Operation theAssignO = this.symbolicStates.get(index);
-		theAssignO.setLeft("$newestInvokeResult");
+		theAssignO.setLeft("$return");
 		if (theAssignO.isNoOp()) {
 			for (int i = index+1; i < this.symbolicStates.size(); i++) {
 				Operation o = this.symbolicStates.get(i);
 				if (o.getLeft().endsWith(theAssignO.getRightA())) {
-					String newLeft = o.getLeft().replace(theAssignO.getRightA(), "$newestInvokeResult");
+					String newLeft = o.getLeft().replace(theAssignO.getRightA(), "$return");
 					o.setLeft(newLeft);
 				}
 			}
@@ -111,7 +111,7 @@ public class PathSummary implements Serializable{
 	public void updateSymbolicStates(Operation oToAdd, boolean newSymbol) {
 		// only 4 possible scenarios:
 		// 1. vi = vm op vn
-		// 2. vi = $newestInvokeResult
+		// 2. vi = $return
 		// 3. vi = $Finstance>>..>>vm
 		// 4. vi = $Fstatic>>... (this one no need to replace anything)
 		Operation newO = oToAdd.clone();
@@ -138,15 +138,15 @@ public class PathSummary implements Serializable{
 			this.symbolicStates.add(newO);
 		}
 		// scenario 2
-		else if (newO.getRightA().equals("$newestInvokeResult")){
-			int assignOIndex = getIndexOfOperationWithLeft("$newestInvokeResult");
+		else if (newO.getRightA().equals("$return")){
+			int assignOIndex = getIndexOfOperationWithLeft("$return");
 			Operation assignO = this.symbolicStates.get(assignOIndex);
 			assignO.setLeft(newO.getLeft());
 			if (!assignO.isNoOp())
 				for (int i = assignOIndex+1; i < this.symbolicStates.size(); i++) {
 					Operation o = this.symbolicStates.get(i);
-					if (o.getLeft().contains("$newestInvokeResult")) {
-						o.setLeft(o.getLeft().replace("$newestInvokeResult", assignO.getRightA()));
+					if (o.getLeft().contains("$return")) {
+						o.setLeft(o.getLeft().replace("$return", assignO.getRightA()));
 					}
 				}
 		}
@@ -173,7 +173,7 @@ public class PathSummary implements Serializable{
 		this.pathChoices = subPS.getPathChoices();
 		this.pathCondition = subPS.getPathCondition();
 		for (Operation o : subPS.getSymbolicStates()) {
-			if (o.getLeft().contains("$newestInvokeResult"))
+			if (o.getLeft().contains("$return"))
 				this.symbolicStates.add(o);
 			else if (o.getLeft().contains("$Fstatic")){
 				int index = getIndexOfOperationWithLeft(o.getLeft());

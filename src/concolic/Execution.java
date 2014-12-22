@@ -3,7 +3,6 @@ package concolic;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 
 import smali.stmt.GotoStmt;
 import smali.stmt.IfStmt;
@@ -56,14 +55,6 @@ public class Execution {
 			
 			pS_0 = concreteExecution(pS_0, eventHandlerMethod, true);
 			pathSummaries.add(pS_0);
-			System.out.println("============== ToDoPathList size : " + toDoPathList.size());
-			
-			int index = 1;
-			for (ToDoPath t : toDoPathList) {
-				System.out.println("\nToDoPath " + index++);
-				System.out.println("[TargetStmtInfo] " + t.getTargetPathStmtInfo());
-				System.out.println("[NewDirection]   " + t.getNewDirection());
-			}
 			
 			symbolicallyFinishingUp();
 			
@@ -201,10 +192,11 @@ public class Execution {
 						pS.mergeWithInvokedPS(subPS);
 					}
 					else if (iS.resultsMoved()) {
-						Operation symbolOFromJavaAPI = new Operation();
-						symbolOFromJavaAPI.setLeft("$newestInvokeResult");
+/*						Operation symbolOFromJavaAPI = new Operation();
+						symbolOFromJavaAPI.setLeft("$return");
 						symbolOFromJavaAPI.setNoOp(true);
-						symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());
+						symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());*/
+						Operation symbolOFromJavaAPI = generateJavaAPIReturnOperation(iS, pS.getSymbolicStates());
 						pS.addSymbolicState(symbolOFromJavaAPI);
 					}
 				}
@@ -225,6 +217,35 @@ public class Execution {
 	}
 	
 
+
+	private Operation generateJavaAPIReturnOperation(InvokeStmt iS, ArrayList<Operation> symbolicStates) {
+		Operation o = new Operation();
+		o.setLeft("$newestResultResult");
+		o.setNoOp(true);
+		String right = "{";
+		String rawParams = iS.getParams();
+		String oldParams = "{" + rawParams + "}";
+		ArrayList<String> params = new ArrayList<String>();
+		if (!rawParams.contains(", "))	params.add(rawParams);
+		else	params = new ArrayList<String>(Arrays.asList(rawParams.split(", ")));
+		for (int i = 0; i < params.size(); i++) {
+			String p = params.get(i);
+			String newP = "";
+			for (Operation oo : symbolicStates)
+				if (oo.getLeft().equals(p)) {
+					if (oo.isNoOp())
+						newP = oo.getRightA();
+					else newP = oo.getRight();
+					if (i == 0 || i == params.size()-1)
+						right += newP;
+					else right += newP + ", ";
+					break;
+				}
+		}
+		right += "}";
+		o.setRightA(iS.getTheStmt().replace(oldParams, right));
+		return o;
+	}
 
 	private void symbolicallyFinishingUp() throws Exception{
 		int counter = 1;
@@ -311,10 +332,11 @@ public class Execution {
 					pS.mergeWithInvokedPS(subPS);
 				}
 				else if (iS.resultsMoved()) {
-					Operation symbolOFromJavaAPI = new Operation();
-					symbolOFromJavaAPI.setLeft("$newestInvokeResult");
+/*					Operation symbolOFromJavaAPI = new Operation();
+					symbolOFromJavaAPI.setLeft("$return");
 					symbolOFromJavaAPI.setNoOp(true);
-					symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());
+					symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());*/
+					Operation symbolOFromJavaAPI = generateJavaAPIReturnOperation(iS, pS.getSymbolicStates());
 					pS.addSymbolicState(symbolOFromJavaAPI);
 				}
 			}
