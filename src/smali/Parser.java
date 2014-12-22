@@ -371,7 +371,7 @@ public class Parser {
 					Operation o = new Operation();
 					o.setLeft(s.getvA());
 					o.setNoOp(true);
-					o.setRightA("$newestInvokeResult");
+					o.setRightA("$return");
 					s.setOperation(o);
 					s.setResultMovedFrom(m.getSmaliStmts().size()-1);
 				}
