@@ -1,8 +1,6 @@
 package tools;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 
 import main.Paths;

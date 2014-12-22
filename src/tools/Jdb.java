@@ -127,7 +127,7 @@ public class Jdb {
 		this.srcPath = srcPath;
 	}
 	
-	private void forTest() {
+/*	private void forTest() {
 		try {
 		String line, line2;
 		BufferedReader in = new BufferedReader(new InputStreamReader(pc.getInputStream()));
@@ -139,5 +139,5 @@ public class Jdb {
 				System.out.println(line2);
 		}
 		}	catch (Exception e) {e.printStackTrace();}
-	}
+	}*/
 }

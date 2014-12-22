@@ -89,14 +89,11 @@ public class Execution {
 	}
 	
 	private PathSummary concreteExecution(PathSummary pS, StaticMethod m, boolean inMainMethod) throws Exception {
-		
-		System.out.println("\nStarting to Execute " + m.getSmaliSignature());
+
 		boolean newPathCondition = false; StaticStmt lastPathStmt = new StaticStmt();
 		
 		String jdbNewLine = "";
 		while (!jdbNewLine.equals("TIMEOUT")) {
-			if (!jdbNewLine.equals(""))
-				System.out.println("[J]" + jdbNewLine);
 			//Processing A Breakpoint Hit
 			if (jdbNewLine.contains("Breakpoint hit: ")) {
 				// 1. Recognize the newly hit StaticStmt, and check for errors
@@ -104,6 +101,7 @@ public class Execution {
 				while (!trimming.equals("TIMEOUT"))
 					trimming = jdb.readLine();
 				String bpInfo = jdbNewLine.substring(jdbNewLine.indexOf("Breakpoint hit: "));
+				System.out.println("[J]" + bpInfo);
 				String methodInfo = bpInfo.split(", ")[1];
 				String cN = methodInfo.substring(0, methodInfo.lastIndexOf("."));
 				String mN = methodInfo.substring(methodInfo.lastIndexOf(".")+1).replace("(", "").replace(")", "");
@@ -208,7 +206,6 @@ public class Execution {
 			jdbNewLine = jdb.readLine();
 			if (jdbNewLine == null)
 				throw (new Exception("Jdb might have crashed."));
-			Thread.sleep(100);
 		}
 		if (inMainMethod) {
 			printOutPathSummary(pS);
