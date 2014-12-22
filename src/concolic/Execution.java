@@ -2,6 +2,7 @@ package concolic;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 
 import smali.stmt.GotoStmt;
@@ -239,7 +240,7 @@ public class Execution {
 		}
 	}
 	
-	private PathSummary symbolicExecution(PathSummary pS, StaticMethod m, ToDoPath toDoPath, boolean inMainMethod) throws Exception{
+	private PathSummary symbolicExecution(PathSummary pS, StaticMethod m, final ToDoPath toDoPath, boolean inMainMethod) throws Exception{
 		if (inMainMethod)
 			System.out.println("[Before symbolic execution, size of toDoPathList]" + toDoPathList.size());
 		ArrayList<StaticStmt> allStmts = m.getSmaliStmts();
@@ -260,68 +261,32 @@ public class Execution {
 			}
 			else if (s.updatesPathCondition()) {
 				String stmtInfo = className + ":" + s.getSourceLineNumber();
-				String pastChoice = toDoPath.getPastChoice(stmtInfo);
-				int nextLineNumber = -1;
-				if (s instanceof IfStmt) {
-					IfStmt ifS = (IfStmt) s;
-					if (stmtInfo.equals(toDoPath.getTargetPathStmtInfo())) {
-						nextLineNumber = ifS.getJumpTargetLineNumber(m);
-						pS.addPathChoice(stmtInfo + "," + nextLineNumber);
-						pS.updatePathCondition(ifS.getJumpCondition());
-					}
-					else if (pastChoice.equals("")) {
-						nextLineNumber = ifS.getJumpTargetLineNumber(m);
-						pushNewToDoPath(pS.getPathChoices(), stmtInfo, "" + ifS.getFlowThroughTargetLineNumber(m));
-						pS.addPathChoice(stmtInfo + "," + nextLineNumber);
-						pS.updatePathCondition(ifS.getJumpCondition());
-					}
-					else {
-						nextLineNumber = Integer.parseInt(pastChoice);
-						pS.addPathChoice(stmtInfo + "," + nextLineNumber);
-						Condition cond = ifS.getJumpCondition();
-						if (nextLineNumber != ifS.getJumpTargetLineNumber(m))
-							cond.reverseCondition();
-						pS.updatePathCondition(cond);
-					}
+				String pastChoice = toDoPath.getAPastChoice();
+				String choice = "";
+				ArrayList<Condition> pathConditions = new ArrayList<Condition>();
+				ArrayList<String> remainingDirections = new ArrayList<String>();
+				if (!pastChoice.equals("")) {
+					if (!pastChoice.startsWith(stmtInfo + ","))
+						throw (new Exception("current PathStmt not synced with toDoPath.pastChoice. " + stmtInfo));
+					// haven't arrived target path stmt yet. So follow past choice, do not make new ToDoPath
+					choice = pastChoice;
 				}
-				else if (s instanceof SwitchStmt) {
-					SwitchStmt swS = (SwitchStmt) s;
-					Map<Integer, Integer> switchMap = swS.getSwitchMap(m);
-					String valueToTake = "";
-					boolean isTurningPoint = toDoPath.getTargetPathStmtInfo().equals(stmtInfo);
-					boolean flowsThrough = false;
-					if (isTurningPoint)
-						valueToTake = toDoPath.getNewDirection();
-					else if (pastChoice.equals("FlowThrough")) {
-						valueToTake = "FlowThrough";
-						flowsThrough = true;
-					}
-					else if (pastChoice.equals("")) {
-						valueToTake = "FlowThrough";
-						flowsThrough = true;
-					}
-					else {
-						valueToTake = pastChoice;
-					}
-					if (valueToTake.equals("FlowThrough")) {
-						nextLineNumber = swS.getFlowThroughLineNumber(m);
-					}
-					else if (switchMap.containsKey(Integer.parseInt(valueToTake))) {
-						nextLineNumber = switchMap.get(Integer.parseInt(valueToTake));
-					}
-					else {
-						nextLineNumber = swS.getFlowThroughLineNumber(m);
-						flowsThrough = true;
-					}
-					if (flowsThrough) {
-						for (Condition cond : swS.getFlowThroughConditions())
-							pS.updatePathCondition(cond);
-					}
-					else
-						pS.updatePathCondition(swS.getSwitchCondition(Integer.parseInt(valueToTake)));
-					pS.addPathChoice(stmtInfo + "," + valueToTake);
+				else if (toDoPath.getTargetPathStmtInfo().equals(pastChoice)){
+					// this is the target path stmt
+					choice = stmtInfo + "," + toDoPath.getNewDirection();
 				}
-				s = m.getStmtByLineNumber(nextLineNumber);
+				else {
+					// already passed target path stmt
+					choice = makeAPathChoice(s, stmtInfo, m);
+					remainingDirections = getRemainingDirections(s, choice, m);
+					for (String remainingDirection : remainingDirections)
+						pushNewToDoPath(pS.getPathChoices(), stmtInfo, remainingDirection);	
+				}
+				pS.addPathChoice(choice);
+				pathConditions = retrievePathConditions(s, choice, m);
+				for (Condition cond : pathConditions)
+					pS.updatePathCondition(cond);
+				s = m.getStmtByLineNumber(readNextLineNumber(s, choice, m));
 				continue;
 			}
 			else if (s instanceof InvokeStmt) {
@@ -340,7 +305,6 @@ public class Execution {
 					symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());
 					pS.addSymbolicState(symbolOFromJavaAPI);
 				}
-
 			}
 			else if (s instanceof GotoStmt) {
 				GotoStmt gS = (GotoStmt) s;
@@ -356,15 +320,96 @@ public class Execution {
 		}
 		return pS;
 	}
-	
+
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//										Utility Methods
+//															Utility Methods
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
+	private ArrayList<String> getRemainingDirections(StaticStmt theS, String choice, StaticMethod m) {
+		ArrayList<String> remainingDirections = new ArrayList<String>();
+		if (theS instanceof IfStmt) {
+			IfStmt s = (IfStmt) theS;
+			int chosenLine = Integer.parseInt(choice.split(",")[1]);
+			if (chosenLine == s.getFlowThroughTargetLineNumber(m))
+				remainingDirections.add(s.getJumpTargetLineNumber(m) + "");
+			else remainingDirections.add(s.getFlowThroughTargetLineNumber(m) + "");
+		}
+		else if (theS instanceof SwitchStmt) {
+			SwitchStmt s = (SwitchStmt) theS;
+			String chosenValue = choice.split(",")[1];
+			if (chosenValue.equals("FlowThrough"))
+				for (int i : s.getSwitchMap(m).keySet())
+					remainingDirections.add(i + "");
+			else {
+				for (int i : s.getSwitchMap(m).keySet())
+					if (i != Integer.parseInt(chosenValue))
+						remainingDirections.add(i + "");
+				remainingDirections.add("FlowThrough");
+			}
+			Collections.reverse(remainingDirections);
+		}
+		return remainingDirections;
+	}
+
+	private ArrayList<Condition> retrievePathConditions(StaticStmt s,	String choice, StaticMethod m) {
+		ArrayList<Condition> result = new ArrayList<Condition>();
+		if (s instanceof IfStmt) {
+			IfStmt ifS = (IfStmt) s;
+			int chosenLine = Integer.parseInt(choice.split(",")[1]);
+			Condition cond = ifS.getJumpCondition();
+			if (chosenLine != ifS.getJumpTargetLineNumber(m))
+				cond.reverseCondition();
+			result.add(cond);
+		}
+		else if (s instanceof SwitchStmt) {
+			SwitchStmt sws = (SwitchStmt) s;
+			String chosenValue = choice.split(",")[1];
+			if (chosenValue.equals("FlowThrough"))
+				for (Condition cond : sws.getFlowThroughConditions())
+					result.add(cond);
+			else if (sws.getSwitchMap(m).containsKey(Integer.parseInt(chosenValue)))
+				result.add(sws.getSwitchCondition(Integer.parseInt(chosenValue)));
+			else
+				for (Condition cond : sws.getFlowThroughConditions())
+					result.add(cond);
+		}
+		return result;
+	}
+	
+	private int readNextLineNumber(StaticStmt s, String choice, StaticMethod m) {
+		int nextLineNumber = -1;
+		if (s instanceof IfStmt)
+			nextLineNumber = Integer.parseInt(choice.split(",")[1]);
+		else if (s instanceof SwitchStmt) {
+			SwitchStmt swS = (SwitchStmt) s;
+			String valueChoice = choice.split(",")[1];
+			if (valueChoice.equals("FlowThrough"))
+				nextLineNumber = swS.getFlowThroughLineNumber(m);
+			else if (swS.getSwitchMap(m).containsKey(Integer.parseInt(valueChoice)))
+				nextLineNumber = swS.getSwitchMap(m).get(Integer.parseInt(valueChoice));
+			else 
+				nextLineNumber = swS.getFlowThroughLineNumber(m);
+		}
+		return nextLineNumber;
+	}
+	
+	private String makeAPathChoice(StaticStmt s, String stmtInfo, StaticMethod m) {
+		String choice = "";
+		if (s instanceof IfStmt) {
+			choice = stmtInfo + "," + ((IfStmt) s).getJumpTargetLineNumber(m);
+		}
+		else if (s instanceof SwitchStmt) {
+			choice = stmtInfo + ",FlowThrough";
+		}
+		return choice;
+	}
+
 	private PathSummary trimPSForInvoke(PathSummary pS, String unparsedParams) {
 		PathSummary trimmedPS = pS.clone();
 		ArrayList<String> params = new ArrayList<String>();
@@ -398,6 +443,33 @@ public class Execution {
 		this.toDoPathList.add(toDo);
 	}
 	
+	private int updatePathConditionAccordingly(PathSummary pS, IfStmt ifS, String stmtInfo, ToDoPath toDoPath, boolean atTargetPathStmt, boolean alreadyPassedTargetPathStmt) {
+		int nextLine = -1;
+		if (!alreadyPassedTargetPathStmt) { // use toDoPath.getPastChoices
+			
+		}
+		else if (atTargetPathStmt) {	// use toDoPath.getNewDirection
+			
+		}
+		else {// choose the jump
+			
+		}
+		return nextLine;
+	}
+
+	private int updatePathConditionAccordingly(PathSummary dupePS, SwitchStmt swS, String stmtInfo, ToDoPath toDoPath, boolean atTargetPathStmt, boolean alreadyPassedTargetPathStmt) {
+		int nextLine = -1;
+		if (!alreadyPassedTargetPathStmt) { // make own decision
+			
+		}
+		else if (atTargetPathStmt) {	// use toDoPath.getNewDirection
+			
+		}
+		else {	// use toDoPath.getPastChoices
+			
+		}
+		return nextLine;
+	}
 	
 	private void printOutPathSummary(PathSummary pS) {
 		System.out.println("\n Execution Log: ");

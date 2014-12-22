@@ -7,6 +7,7 @@ public class ToDoPath {
 	private ArrayList<String> pastChoices = new ArrayList<String>();
 	private String targetPathStmtInfo = "";
 	private String newDirection = "";
+	private int choiceCounter = 0;
 	
 	
 	public ArrayList<String> getPathChoices() {
@@ -43,5 +44,11 @@ public class ToDoPath {
 		}
 		return "";
 	}
-
+	
+	public String getAPastChoice() {
+		if (this.pastChoices.size() < 1 || choiceCounter > this.pastChoices.size()-1)
+			return "";
+		return this.pastChoices.get(choiceCounter++);
+	}
+	
 }
