@@ -41,14 +41,15 @@ public class Parser {
 	private static BlockLabel label;
 	private static boolean normalLabelAlreadyUsed;
 	
-	public static void parseSmali(StaticApp theApp) {
+	public static void parseSmali(StaticApp theApp){
 		
 		staticApp = theApp;
 		smaliFolder = new File(staticApp.outPath + "/apktool/smali/");
 		System.out.println("parsing smali files...");
 		for (File f : smaliFolder.listFiles())
 			initClasses(f);
-		parseFiles();
+		try {	parseFiles(); }	
+		catch (Exception e) {e.printStackTrace();}
 		File original = new File(staticApp.outPath + "/apktool/smali/");
 		File instrumented = new File(staticApp.outPath + "/apktool/newSmali/");
 		System.out.println("\nmoving original smali files into /apktool/oldSmali/...");
@@ -74,7 +75,7 @@ public class Parser {
 		}
 	}
 
-	private static void parseFiles() {
+	private static void parseFiles() throws Exception{
 		int counter = 1, total = staticApp.getClasses().size();
 		for (StaticClass c : staticApp.getClasses()) {
 			File f = new File(staticApp.outPath + "/apktool/smali/" + c.getJavaName().replace(".", "/") + ".smali");
@@ -86,7 +87,7 @@ public class Parser {
 	private static int index = 0;
 	private static int paramIndex = 0;
 	
-	private static StaticClass parseSmaliCode(File f, final StaticClass c) {
+	private static StaticClass parseSmaliCode(File f, final StaticClass c) throws Exception{
 		int largestLineNumber = getLargestLineNumberAndMightAsWellGetOldLines(f);
 		classSmali = "";
 		index = 0;
@@ -239,7 +240,7 @@ public class Parser {
 		return c;
 	}
 	
-	private static StaticStmt parseStmt(StaticMethod m, String line) {
+	private static StaticStmt parseStmt(StaticMethod m, String line) throws Exception{
 		
 		if (StmtFormat.isArrayGet(line) || StmtFormat.isArrayPut(line)) {
 			ArrayStmt s = new ArrayStmt();
@@ -381,7 +382,7 @@ public class Parser {
 					if (((NewStmt) lastS).isNewArray())
 						((NewStmt) lastS).setNewArrayMoved(true);
 				}
-				else {System.out.println("something's wrong when parsing this MoveResult stmt..\n\t" + m.getSmaliSignature() + "\n");}
+				else throw (new Exception("something's wrong when parsing this MoveResult stmt..\n\t" + m.getSmaliSignature() + "\n"));
 			}
 			else {
 				String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
@@ -557,10 +558,6 @@ public class Parser {
 				}
 			}
 			ss.setSwitchMap(switchMap);
-			System.out.println("[SWITCHMAP]");
-			for (Map.Entry<Integer, String> entry : switchMap.entrySet()) {
-				System.out.println(" " + entry.getKey() + " - " + entry.getValue());
-			}
 		}
 		else if (line.startsWith(":try_start_")){
 			label.addTryLabel(line);
