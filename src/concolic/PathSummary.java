@@ -115,6 +115,7 @@ public class PathSummary implements Serializable{
 		// 3. vi = $Finstance>>..>>vm
 		// 4. vi = $Fstatic>>... (this one no need to replace anything)
 		Operation newO = oToAdd.clone();
+		System.out.println("[Adding]" + newO.toString());
 		int index = getIndexOfOperationWithLeft(newO.getLeft());
 		// scenario 1
 		if (!newSymbol) {

@@ -26,6 +26,7 @@ public class Execution {
 	private Jdb jdb;
 	private ArrayList<PathSummary> pathSummaries = new ArrayList<PathSummary>();
 	private ArrayList<ToDoPath> toDoPathList = new ArrayList<ToDoPath>();
+	private boolean printOutPS = false;
 	
 	public Execution(StaticApp staticApp) {
 		this.staticApp = staticApp;
@@ -202,9 +203,8 @@ public class Execution {
 			if (jdbNewLine == null)
 				throw (new Exception("Jdb might have crashed."));
 		}
-		if (inMainMethod) {
+		if (inMainMethod && printOutPS) {
 			printOutPathSummary(pS);
-			System.out.println("\n==== Finished Executing " + m.getSmaliSignature());
 		}
 		return pS;
 	}
@@ -233,7 +233,6 @@ public class Execution {
 		}
 		newParam += "}";
 		resultO.setRightA("#" + iS.getInvokeType() + ">>" + iS.getTargetSig() + ">>" + newParam);
-		System.out.println("[NEWO] " + resultO.toString());
 		return resultO;
 	}
 
@@ -322,7 +321,7 @@ public class Execution {
 			int nextStmtID = s.getStmtID()+1;
 			s = allStmts.get(nextStmtID);
 		}
-		if (inMainMethod) {
+		if (inMainMethod && printOutPS) {
 			printOutPathSummary(pS);
 		}
 		return pS;
