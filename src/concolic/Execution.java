@@ -69,6 +69,8 @@ public class Execution {
 			
 			jdb.exit();
 			
+			System.out.println("\nTotal number of PS: " + pathSummaries.size());
+			
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 
@@ -235,8 +237,8 @@ public class Execution {
 			printOutToDoPath(toDoPath);
 			PathSummary initPS = new PathSummary();
 			initPS.setSymbolicStates(initSymbolicStates(eventHandlerMethod));
-			
-			symbolicExecution(initPS, eventHandlerMethod, toDoPath, true);
+			PathSummary newPS = symbolicExecution(initPS, eventHandlerMethod, toDoPath, true);
+			pathSummaries.add(newPS);
 		}
 	}
 	
@@ -261,9 +263,9 @@ public class Execution {
 			}
 			else if (s.updatesPathCondition()) {
 				/////////////junk
-				System.out.println(" *this stmt is " + className + ":" + s.getSourceLineNumber());
-				System.out.println(" ----- current ToDoPath -----");
-				this.printOutToDoPath(toDoPath);
+				//System.out.println(" *this stmt is " + className + ":" + s.getSourceLineNumber());
+				//System.out.println(" ----- current ToDoPath -----");
+				//this.printOutToDoPath(toDoPath);
 				//////////////
 				String stmtInfo = className + ":" + s.getSourceLineNumber();
 				String pastChoice = toDoPath.getAPastChoice();
@@ -271,7 +273,7 @@ public class Execution {
 				ArrayList<Condition> pathConditions = new ArrayList<Condition>();
 				ArrayList<String> remainingDirections = new ArrayList<String>();
 				if (!pastChoice.equals("")) {
-					System.out.println("*already used up the pastChoices");
+					//System.out.println("*already used up the pastChoices");
 					if (!pastChoice.startsWith(stmtInfo + ","))
 						throw (new Exception("current PathStmt not synced with toDoPath.pastChoice. " + stmtInfo));
 					// haven't arrived target path stmt yet. So follow past choice, do not make new ToDoPath
@@ -280,15 +282,15 @@ public class Execution {
 				else if (toDoPath.getTargetPathStmtInfo().equals(stmtInfo)){
 					// this is the target path stmt
 					choice = stmtInfo + "," + toDoPath.getNewDirection();
-					System.out.println("*arrived target path stmt, going: " + choice);
+					//System.out.println("*arrived target path stmt, going: " + choice);
 				}
 				else {
 					// already passed target path stmt
 					choice = makeAPathChoice(s, stmtInfo, m);
 					remainingDirections = getRemainingDirections(s, choice, m);
 					for (String remainingDirection : remainingDirections) {
-						System.out.println(" *choosing to go: " + choice);
-						System.out.println(" *gotta add that new ToDoPath: " + stmtInfo + "," + remainingDirection);
+						//System.out.println(" *choosing to go: " + choice);
+						//System.out.println(" *gotta add that new ToDoPath: " + stmtInfo + "," + remainingDirection);
 						pushNewToDoPath(pS.getPathChoices(), stmtInfo, remainingDirection);
 					}
 				}
