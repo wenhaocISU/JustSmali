@@ -244,6 +244,7 @@ public class Execution {
 		}
 		right += "}";
 		o.setRightA(iS.getTheStmt().replace(oldParams, right));
+		System.out.println("[NEWO] " + o.toString());
 		return o;
 	}
 
