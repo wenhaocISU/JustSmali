@@ -192,11 +192,11 @@ public class Execution {
 						pS.mergeWithInvokedPS(subPS);
 					}
 					else if (iS.resultsMoved()) {
-/*						Operation symbolOFromJavaAPI = new Operation();
+						Operation symbolOFromJavaAPI = new Operation();
 						symbolOFromJavaAPI.setLeft("$return");
 						symbolOFromJavaAPI.setNoOp(true);
-						symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());*/
-						Operation symbolOFromJavaAPI = generateJavaAPIReturnOperation(iS, pS.getSymbolicStates());
+						symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());
+						//Operation symbolOFromJavaAPI = generateJavaAPIReturnOperation(iS, pS.getSymbolicStates());
 						pS.addSymbolicState(symbolOFromJavaAPI);
 					}
 				}
@@ -333,11 +333,11 @@ public class Execution {
 					pS.mergeWithInvokedPS(subPS);
 				}
 				else if (iS.resultsMoved()) {
-/*					Operation symbolOFromJavaAPI = new Operation();
+					Operation symbolOFromJavaAPI = new Operation();
 					symbolOFromJavaAPI.setLeft("$return");
 					symbolOFromJavaAPI.setNoOp(true);
-					symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());*/
-					Operation symbolOFromJavaAPI = generateJavaAPIReturnOperation(iS, pS.getSymbolicStates());
+					symbolOFromJavaAPI.setRightA("$" + s.getTheStmt());
+					//Operation symbolOFromJavaAPI = generateJavaAPIReturnOperation(iS, pS.getSymbolicStates());
 					pS.addSymbolicState(symbolOFromJavaAPI);
 				}
 			}
