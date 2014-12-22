@@ -279,8 +279,10 @@ public class Execution {
 					// already passed target path stmt
 					choice = makeAPathChoice(s, stmtInfo, m);
 					remainingDirections = getRemainingDirections(s, choice, m);
-					for (String remainingDirection : remainingDirections)
-						pushNewToDoPath(pS.getPathChoices(), stmtInfo, remainingDirection);	
+					for (String remainingDirection : remainingDirections) {
+						System.out.println(" *gotta add that new ToDoPath: " + stmtInfo + "," + remainingDirection);
+						pushNewToDoPath(pS.getPathChoices(), stmtInfo, remainingDirection);
+					}
 				}
 				pS.addPathChoice(choice);
 				pathConditions = retrievePathConditions(s, choice, m);
@@ -441,34 +443,6 @@ public class Execution {
 		toDo.setTargetPathStmtInfo(pathStmtInfo);
 		toDo.setNewDirection(newDirection);
 		this.toDoPathList.add(toDo);
-	}
-	
-	private int updatePathConditionAccordingly(PathSummary pS, IfStmt ifS, String stmtInfo, ToDoPath toDoPath, boolean atTargetPathStmt, boolean alreadyPassedTargetPathStmt) {
-		int nextLine = -1;
-		if (!alreadyPassedTargetPathStmt) { // use toDoPath.getPastChoices
-			
-		}
-		else if (atTargetPathStmt) {	// use toDoPath.getNewDirection
-			
-		}
-		else {// choose the jump
-			
-		}
-		return nextLine;
-	}
-
-	private int updatePathConditionAccordingly(PathSummary dupePS, SwitchStmt swS, String stmtInfo, ToDoPath toDoPath, boolean atTargetPathStmt, boolean alreadyPassedTargetPathStmt) {
-		int nextLine = -1;
-		if (!alreadyPassedTargetPathStmt) { // make own decision
-			
-		}
-		else if (atTargetPathStmt) {	// use toDoPath.getNewDirection
-			
-		}
-		else {	// use toDoPath.getPastChoices
-			
-		}
-		return nextLine;
 	}
 	
 	private void printOutPathSummary(PathSummary pS) {
