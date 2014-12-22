@@ -277,7 +277,7 @@ public class Execution {
 					// haven't arrived target path stmt yet. So follow past choice, do not make new ToDoPath
 					choice = pastChoice;
 				}
-				else if (toDoPath.getTargetPathStmtInfo().equals(pastChoice)){
+				else if (toDoPath.getTargetPathStmtInfo().equals(stmtInfo)){
 					// this is the target path stmt
 					choice = stmtInfo + "," + toDoPath.getNewDirection();
 					System.out.println("*arrived target path stmt, going: " + choice);
