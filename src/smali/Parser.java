@@ -274,6 +274,8 @@ public class Parser {
 			o.setRightA("#" + s.getValue());
 			if (line.startsWith("const-string"))
 				o.setRightA("#string>>" + s.getValue());
+			if (line.startsWith("const-class"))
+				o.setRightA("#class>>" + s.getValue());
 			s.setOperation(o);
 			return s;
 		}
