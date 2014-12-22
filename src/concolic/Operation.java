@@ -64,8 +64,11 @@ public class Operation implements Serializable{
 	}
 	
 	public String getRight() {
-		if (noOp)
+		if (noOp) {
+			if (rightA.startsWith("(") && rightA.endsWith(")"))
+				return rightA;
 			return "(" + rightA + " )";
+		}
 		return "(" + op + " " + rightA + " " + rightB + " )";
 	}
 
