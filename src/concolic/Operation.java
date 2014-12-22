@@ -76,6 +76,7 @@ public class Operation implements Serializable{
 		Operation result = new Operation();
 		result.setLeft(this.left);
 		result.setNoOp(this.noOp);
+		result.setOp(this.op);
 		result.setRightA(this.rightA);
 		result.setRightB(this.rightB);
 		return result;

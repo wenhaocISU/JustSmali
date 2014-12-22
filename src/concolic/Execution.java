@@ -43,6 +43,16 @@ public class Execution {
 		this.seq = seq;
 	}
 	
+	public void doFullSymbolic() throws Exception{
+		ToDoPath toDoPath = new ToDoPath();
+		PathSummary initPS = new PathSummary();
+		initPS.setSymbolicStates(initSymbolicStates(eventHandlerMethod));
+		PathSummary newPS = symbolicExecution(initPS, eventHandlerMethod, toDoPath, true);
+		pathSummaries.add(newPS);
+		symbolicallyFinishingUp();
+		System.out.println("\nTotal number of PS: " + pathSummaries.size());
+	}
+	
 	public void doIt() {
 		try {
 			
@@ -209,32 +219,6 @@ public class Execution {
 		return pS;
 	}
 	
-
-
-	private Operation generateJavaAPIReturnOperation(InvokeStmt iS, ArrayList<Operation> symbolicStates) {
-		Operation resultO = new Operation();
-		resultO.setLeft("$return");
-		resultO.setNoOp(true);
-
-		String rawParams = iS.getParams();
-		ArrayList<String> oldParams = new ArrayList<String>();
-		ArrayList<String> newParams = new ArrayList<String>();
-		if (!rawParams.contains(", "))	oldParams.add(rawParams);
-		else	oldParams = new ArrayList<String>(Arrays.asList(rawParams.split(", ")));
-		for (String oldp : oldParams)
-			for (Operation o : symbolicStates)
-				if (o.getLeft().equals(oldp)) {
-					newParams.add(o.getRight());
-					break;
-				}
-		String newParam = "{" + newParams.get(0);
-		for (int i = 1; i < newParams.size(); i++) {
-			newParam += ", " + newParams.get(i);
-		}
-		newParam += "}";
-		resultO.setRightA("#" + iS.getInvokeType() + ">>" + iS.getTargetSig() + ">>" + newParam);
-		return resultO;
-	}
 
 	private void symbolicallyFinishingUp() throws Exception{
 		int counter = 1;
@@ -416,6 +400,31 @@ public class Execution {
 		return choice;
 	}
 
+	private Operation generateJavaAPIReturnOperation(InvokeStmt iS, ArrayList<Operation> symbolicStates) {
+		Operation resultO = new Operation();
+		resultO.setLeft("$return");
+		resultO.setNoOp(true);
+
+		String rawParams = iS.getParams();
+		ArrayList<String> oldParams = new ArrayList<String>();
+		ArrayList<String> newParams = new ArrayList<String>();
+		if (!rawParams.contains(", "))	oldParams.add(rawParams);
+		else	oldParams = new ArrayList<String>(Arrays.asList(rawParams.split(", ")));
+		for (String oldp : oldParams)
+			for (Operation o : symbolicStates)
+				if (o.getLeft().equals(oldp)) {
+					newParams.add(o.getRight());
+					break;
+				}
+		String newParam = "{" + newParams.get(0);
+		for (int i = 1; i < newParams.size(); i++) {
+			newParam += ", " + newParams.get(i);
+		}
+		newParam += "}";
+		resultO.setRightA("#" + iS.getInvokeType() + ">>" + iS.getTargetSig() + ">>" + newParam);
+		return resultO;
+	}
+	
 	private PathSummary trimPSForInvoke(PathSummary pS, String unparsedParams) {
 		PathSummary trimmedPS = pS.clone();
 		ArrayList<String> params = new ArrayList<String>();
