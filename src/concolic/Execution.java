@@ -240,7 +240,7 @@ public class Execution {
 		}
 	}
 	
-	private PathSummary symbolicExecution(PathSummary pS, StaticMethod m, final ToDoPath toDoPath, boolean inMainMethod) throws Exception{
+	private PathSummary symbolicExecution(PathSummary pS, StaticMethod m, ToDoPath toDoPath, boolean inMainMethod) throws Exception{
 		if (inMainMethod)
 			System.out.println("[Before symbolic execution, size of toDoPathList]" + toDoPathList.size());
 		ArrayList<StaticStmt> allStmts = m.getSmaliStmts();
@@ -261,6 +261,7 @@ public class Execution {
 			}
 			else if (s.updatesPathCondition()) {
 				/////////////junk
+				System.out.println(" *this stmt is " + className + ":" + s.getSourceLineNumber());
 				System.out.println(" ----- current ToDoPath -----");
 				this.printOutToDoPath(toDoPath);
 				//////////////
@@ -270,6 +271,7 @@ public class Execution {
 				ArrayList<Condition> pathConditions = new ArrayList<Condition>();
 				ArrayList<String> remainingDirections = new ArrayList<String>();
 				if (!pastChoice.equals("")) {
+					System.out.println("*already used up the pastChoices");
 					if (!pastChoice.startsWith(stmtInfo + ","))
 						throw (new Exception("current PathStmt not synced with toDoPath.pastChoice. " + stmtInfo));
 					// haven't arrived target path stmt yet. So follow past choice, do not make new ToDoPath
