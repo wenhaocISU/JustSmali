@@ -260,6 +260,10 @@ public class Execution {
 				pS.updateSymbolicStates(s.getOperation(), false);
 			}
 			else if (s.updatesPathCondition()) {
+				/////////////junk
+				System.out.println(" ----- current ToDoPath -----");
+				this.printOutToDoPath(toDoPath);
+				//////////////
 				String stmtInfo = className + ":" + s.getSourceLineNumber();
 				String pastChoice = toDoPath.getAPastChoice();
 				String choice = "";
