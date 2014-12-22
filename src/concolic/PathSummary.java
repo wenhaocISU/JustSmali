@@ -133,9 +133,13 @@ public class PathSummary implements Serializable{
 				if (ADone && BDone)
 					break;
 			}
-			if (index > -1)
+			System.out.println("[Wanna Add]" + newO.toString());
+			if (index > -1) {
+				System.out.println("[Deleting]" + this.symbolicStates.get(index));
 				this.symbolicStates.remove(index);
+			}
 			this.symbolicStates.add(newO);
+			System.out.println("[Added]" + newO.toString());
 		}
 		// scenario 2
 		else if (newO.getRightA().equals("$return")){
