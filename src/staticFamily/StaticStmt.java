@@ -182,7 +182,6 @@ public class StaticStmt implements Serializable{
 
 	public void setOperation(Operation operation) {
 		this.operation = operation;
-		System.out.println("[New Operation]" + operation.toString());
 	}
 	
 	public Map<String, String> getvDebugInfo() {
