@@ -135,7 +135,15 @@ public class Parser {
 					if (line.startsWith(".")) {
 						if (line.startsWith(".line")) {
 							originalLineNumber = Integer.parseInt(line.split(" ")[1]);
-							m.addSourceLineNumber(originalLineNumber);
+							if (m.getSourceLineNumbers().contains(originalLineNumber)) {
+								originalLineNumber = -1;
+								classSmali = classSmali.substring(0, classSmali.length()-1);
+								classSmali = classSmali.substring(0, classSmali.lastIndexOf("\n")+1);
+								String mSmali = m.getSmaliCode();
+								mSmali = mSmali.substring(0, mSmali.length()-1);
+								m.setSmaliCode(mSmali.substring(0, mSmali.lastIndexOf("\n")+1));
+							}
+							else m.addSourceLineNumber(originalLineNumber);
 						}
 						else {
 							parseDots(m, line);

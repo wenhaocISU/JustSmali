@@ -26,7 +26,7 @@ public class Execution {
 	private Jdb jdb;
 	private ArrayList<PathSummary> pathSummaries = new ArrayList<PathSummary>();
 	private ArrayList<ToDoPath> toDoPathList = new ArrayList<ToDoPath>();
-	private boolean printOutPS = false;
+	private boolean printOutPS = true;
 	
 	public Execution(StaticApp staticApp) {
 		this.staticApp = staticApp;
@@ -37,6 +37,8 @@ public class Execution {
 	
 	public void setTargetMethod(String methodSig) {
 		this.eventHandlerMethod = staticApp.findMethod(methodSig);
+		if (eventHandlerMethod == null)
+			System.out.println("eventhandler m null");
 	}
 	
 	public void setSequence(ArrayList<String> seq) {
@@ -202,7 +204,8 @@ public class Execution {
 					}
 					else if (iS.resultsMoved()) {
 						Operation symbolOFromJavaAPI = generateJavaAPIReturnOperation(iS, pS.getSymbolicStates());
-						pS.addSymbolicState(symbolOFromJavaAPI);
+						if (symbolOFromJavaAPI != null)
+							pS.addSymbolicState(symbolOFromJavaAPI);
 					}
 				}
 				// 3. Finished Processing StaticStmt, let jdb continue
@@ -240,6 +243,7 @@ public class Execution {
 		String className = m.getDeclaringClass(staticApp).getJavaName();
 		StaticStmt s = allStmts.get(0);
 		while (true) {
+			System.out.println("[Current Stmt]" + className + ":" + s.getSourceLineNumber() + "   " + s.getTheStmt());
 			pS.addExecutionLog(className + ":" + s.getSourceLineNumber());
 			if (s.endsMethod()) {
 				if (s instanceof ReturnStmt && !((ReturnStmt) s).returnsVoid())
@@ -287,14 +291,15 @@ public class Execution {
 				InvokeStmt iS = (InvokeStmt) s;
 				StaticMethod targetM = staticApp.findMethod(iS.getTargetSig());
 				StaticClass targetC = staticApp.findClassByDexName(iS.getTargetSig().split("->")[0]);
-				if (targetC != null && targetM != null) {
+				if (targetC != null && targetM != null && targetM.getDeclaringClass(staticApp) != null) {
 					PathSummary trimmedPS = trimPSForInvoke(pS, iS.getParams());
 					PathSummary subPS = symbolicExecution(trimmedPS, targetM, toDoPath, false);
 					pS.mergeWithInvokedPS(subPS);
 				}
 				else if (iS.resultsMoved()) {
 					Operation symbolOFromJavaAPI = generateJavaAPIReturnOperation(iS, pS.getSymbolicStates());
-					pS.addSymbolicState(symbolOFromJavaAPI);
+					if (symbolOFromJavaAPI != null)
+						pS.addSymbolicState(symbolOFromJavaAPI);
 				}
 			}
 			else if (s instanceof GotoStmt) {
@@ -404,8 +409,9 @@ public class Execution {
 		Operation resultO = new Operation();
 		resultO.setLeft("$return");
 		resultO.setNoOp(true);
-
+		
 		String rawParams = iS.getParams();
+
 		ArrayList<String> oldParams = new ArrayList<String>();
 		ArrayList<String> newParams = new ArrayList<String>();
 		if (!rawParams.contains(", "))	oldParams.add(rawParams);
@@ -416,10 +422,11 @@ public class Execution {
 					newParams.add(o.getRight());
 					break;
 				}
-		String newParam = "{" + newParams.get(0);
-		for (int i = 1; i < newParams.size(); i++) {
+		String newParam = "{";
+		if (newParams.size()>0)
+			newParam += newParams.get(0);
+		for (int i = 1; i < newParams.size(); i++)
 			newParam += ", " + newParams.get(i);
-		}
 		newParam += "}";
 		resultO.setRightA("#" + iS.getInvokeType() + ">>" + iS.getTargetSig() + ">>" + newParam);
 		return resultO;
@@ -430,7 +437,7 @@ public class Execution {
 		ArrayList<String> params = new ArrayList<String>();
 		if (!unparsedParams.contains(", "))
 			params.add(unparsedParams);
-		else params = (ArrayList<String>) Arrays.asList(unparsedParams.split(", "));
+		else params = new ArrayList<String>(Arrays.asList(unparsedParams.split(", ")));
 		int paramIndex = 0;
 		ArrayList<Operation> trimmedSymbolicStates = new ArrayList<Operation>();
 		for (Operation o : pS.getSymbolicStates()) {
