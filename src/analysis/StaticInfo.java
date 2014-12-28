@@ -21,6 +21,7 @@ import staticFamily.StaticApp;
 import staticFamily.StaticClass;
 import tools.Apktool;
 import tools.Others;
+import tools.Soot;
 
 public class StaticInfo {
 
@@ -43,14 +44,17 @@ public class StaticInfo {
 			loadInfoFile();
 		}
 		
-		File instrumentedAPK = new File(staticApp.outPath + "/" + 
-					apkFile.getName().substring(0, apkFile.getName().lastIndexOf(".apk"))
-					+ "_smali.apk");
-		if (forceAllSteps || !instrumentedAPK.exists()) {
+		File instrumentedAPK_smali = new File(staticApp.outPath + "/" + apkFile.getName().substring(0, apkFile.getName().lastIndexOf(".apk")) + "_smali.apk");
+		if (forceAllSteps || !instrumentedAPK_smali.exists()) {
 			Apktool.recompileAPK(staticApp);
-			Others.signAPK(staticApp);
 		}
-		staticApp.setSignedAppPath(instrumentedAPK.getAbsolutePath());
+		staticApp.setSignedAppPath(instrumentedAPK_smali.getAbsolutePath());
+		
+		File instrumentedAPK_soot = new File(staticApp.outPath + "/" + apkFile.getName().substring(0, apkFile.getName().lastIndexOf(".apk")) + "_soot.apk");
+		if (forceAllSteps || !instrumentedAPK_soot.exists()) {
+			Soot.InstrumentEveryMethod(staticApp);
+		}
+		Others.signAPK(staticApp);
 		
 		System.out.println("\nAnalysis Initialization Complete.\n");
 		return staticApp;

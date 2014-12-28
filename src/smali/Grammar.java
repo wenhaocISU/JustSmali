@@ -110,11 +110,11 @@ public class Grammar {
 			case "B":	return "byte";
 			case "S":	return "short";
 			case "C":	return "char";
-			case "I":	return "int";
+			case "I":		return "int";
 			case "J":	return "long";
 			case "F":	return "float";
 			case "D":	return "double";
-			default:	return "L" + java.replace(".", "/") + ";";
+			default:		return "L" + java.replace(".", "/") + ";";
 		}
 	}
 	
@@ -148,15 +148,15 @@ public class Grammar {
 					a = dexToJavaTypeName(a);
 				}
 				else switch (c) {
-					case 'V':	a = "void";		break;
-					case 'Z':	a = "boolean";	break;
-					case 'B':	a = "byte";		break;
-					case 'S':	a = "short";	break;
-					case 'C':	a = "char";		break;
-					case 'I':	a = "int";		break;
-					case 'J':	a = "long";		break;
-					case 'F':	a = "float";	break;
-					case 'D':	a = "double";	break;
+					case 'V':		a = "void";			break;
+					case 'Z':		a = "boolean";	break;
+					case 'B':		a = "byte";			break;
+					case 'S':		a = "short";		break;
+					case 'C':		a = "char";			break;
+					case 'I':		a = "int";			break;
+					case 'J':		a = "long";			break;
+					case 'F':		a = "float";			break;
+					case 'D':	a = "double";		break;
 				}
 				for (int i = 0; i < dimension; i++)
 					a += "[]";
@@ -164,15 +164,15 @@ public class Grammar {
 			}
 			else {
 				switch (c) {
-					case 'V':	result.add("void");		break;
-					case 'Z':	result.add("boolean");	break;
-					case 'B':	result.add("byte");		break;
-					case 'S':	result.add("short");	break;
-					case 'C':	result.add("char");		break;
-					case 'I':	result.add("int");		break;
-					case 'J':	result.add("long");		break;
-					case 'F':	result.add("float");	break;
-					case 'D':	result.add("double");	break;
+					case 'V':		result.add("void");			break;
+					case 'Z':		result.add("boolean");		break;
+					case 'B':		result.add("byte");			break;
+					case 'S':		result.add("short");			break;
+					case 'C':		result.add("char");			break;
+					case 'I':		result.add("int");				break;
+					case 'J':		result.add("long");			break;
+					case 'F':		result.add("float");			break;
+					case 'D':	result.add("double");		break;
 				}
 			}
 		}
