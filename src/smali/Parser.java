@@ -420,7 +420,7 @@ public class Parser {
 				Operation o = new Operation();
 				o.setLeft(arguments[0]);
 				o.setNoOp(true);
-				o.setRightA("#new>>" + arguments[1]);
+				o.setRightA("synew>>" + arguments[1]);
 				s.setOperation(o);
 			}
 			return s;
