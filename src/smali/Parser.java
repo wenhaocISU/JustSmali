@@ -48,14 +48,17 @@ public class Parser {
 		System.out.println("parsing smali files...");
 		for (File f : smaliFolder.listFiles())
 			initClasses(f);
-		try {	parseFiles(); }	
-		catch (Exception e) {e.printStackTrace();}
-		File original = new File(staticApp.outPath + "/apktool/smali/");
-		File instrumented = new File(staticApp.outPath + "/apktool/newSmali/");
-		System.out.println("\nmoving original smali files into /apktool/oldSmali/...");
-		original.renameTo(new File(staticApp.outPath + "/apktool/oldSmali/"));
-		System.out.println("\nmoving instrumented smali files into /apktool/smali/...");
-		instrumented.renameTo(new File(staticApp.outPath + "/apktool/smali/"));
+		try {
+			parseFiles();
+			File original = new File(staticApp.outPath + "/apktool/smali/");
+			File instrumented = new File(staticApp.outPath + "/apktool/newSmali/");
+			System.out.println("\nmoving original smali files into /apktool/oldSmali/...");
+			if (!original.renameTo(new File(staticApp.outPath + "/apktool/oldSmali/")))
+				throw (new Exception("failed to rename original smali to /apktool/oldSmali/"));
+			System.out.println("\nmoving instrumented smali files into /apktool/smali/...");
+			if (!instrumented.renameTo(new File(staticApp.outPath + "/apktool/smali/")))
+				throw (new Exception("failed to rename instrumented smali to /apktool/smali/"));
+		} catch (Exception e) {e.printStackTrace();}
 	}
 	
 	private static void initClasses(File f) {
