@@ -6,6 +6,8 @@ import java.util.ArrayList;
 @SuppressWarnings("serial")
 public class PathSummary implements Serializable{
 
+	private String methodSignature = "";
+	
 	private ArrayList<String> executionLog = new ArrayList<String>();
 	private ArrayList<Condition> pathCondition = new ArrayList<Condition>();
 	private ArrayList<Operation> symbolicStates = new ArrayList<Operation>();
@@ -56,6 +58,7 @@ public class PathSummary implements Serializable{
 		for (String pathChoice: this.pathChoices)
 			pathChoices.add(pathChoice);
 		result.setPathChoices(pathChoices);
+		result.setMethodSignature(this.methodSignature);
 		return result;
 	}
 
@@ -195,6 +198,14 @@ public class PathSummary implements Serializable{
 				return i;
 		}
 		return -1;
+	}
+
+	public String getMethodSignature() {
+		return methodSignature;
+	}
+
+	public void setMethodSignature(String methodSignature) {
+		this.methodSignature = methodSignature;
 	}
 	
 }

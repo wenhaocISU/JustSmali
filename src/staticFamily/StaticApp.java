@@ -5,6 +5,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import concolic.PathSummary;
+
 @SuppressWarnings("serial")
 public class StaticApp implements Serializable{
 
@@ -13,6 +15,7 @@ public class StaticApp implements Serializable{
 	private String signedAppPath;
 	private String packageName;
 	private List<StaticClass> classes = new ArrayList<StaticClass>();	
+	private ArrayList<PathSummary> pathSummaries = new ArrayList<PathSummary>();
 	
 	// Getters and Setters
 
@@ -99,4 +102,21 @@ public class StaticApp implements Serializable{
 	public void setSignedAppPath(String signedAppPath) {
 		this.signedAppPath = signedAppPath;
 	}
+
+	public ArrayList<PathSummary> getAllPathSummaries() {
+		ArrayList<PathSummary> result = new ArrayList<PathSummary>();
+		for (StaticClass c : this.classes)
+			for (StaticMethod m : c.getMethods())
+				result.addAll(m.getPathSummaries());
+		return result;
+	}
+	
+	public ArrayList<PathSummary> getPathSummariesOfMethod(String methodSig) {
+		return this.findMethod(methodSig).getPathSummaries();
+	}
+	
+	public ArrayList<PathSummary> getPathSummariesOfMethod(StaticMethod m) {
+		return m.getPathSummaries();
+	}
+	
 }
