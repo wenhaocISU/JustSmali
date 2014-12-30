@@ -67,11 +67,9 @@ public class Soot {
 				final Local l_outPrint = Jimple.v().newLocal("outPrint", RefType.v("java.io.PrintStream"));
 				b.getLocals().add(l_outPrint);
 				final SootMethod out_println = Scene.v().getSootClass("java.io.PrintStream").getMethod("void println(java.lang.String)");
-				String methodInfo = b.getMethod().getBytecodeSignature();
-				String dexClassName = Grammar.javaToDexClassName(methodInfo.substring(1, methodInfo.indexOf(": ")));
-				String dexMethodSubsig = methodInfo.substring(methodInfo.indexOf(": ")+2, methodInfo.lastIndexOf(">"));
-				String methodSig = dexClassName + "->" + dexMethodSubsig;
 				PatchingChain<Unit> units = b.getUnits();
+				String mSig = generateBytecodeSignature(b.getMethod().getBytecodeSignature());
+				System.out.println("[beginning]" + mSig);
 				// first instrument the first line
 				Iterator<Unit> unitsIT = b.getUnits().snapshotIterator();
 				int hasThis = 1;
@@ -84,7 +82,7 @@ public class Soot {
 						Jimple.v().newStaticFieldRef(Scene.v().getField("<java.lang.System: java.io.PrintStream out>").makeRef())
 						), firstUnit);
 				units.insertBefore(Jimple.v().newInvokeStmt(
-						Jimple.v().newVirtualInvokeExpr(l_outPrint, out_println.makeRef(), StringConstant.v("METHOD_STARTING," + methodSig))
+						Jimple.v().newVirtualInvokeExpr(l_outPrint, out_println.makeRef(), StringConstant.v("METHOD_STARTING," + mSig))
 						), firstUnit);
 				b.validate();
 				// then instrument the return
@@ -95,7 +93,8 @@ public class Soot {
 					u.apply(new AbstractStmtSwitch() {
 						public void caseReturnStmt(ReturnStmt rS) {
 							PatchingChain<Unit> units = b.getUnits();
-							String mSig = b.getMethod().getSignature().replace(",", " ");
+							String mSig = generateBytecodeSignature(b.getMethod().getBytecodeSignature());
+							System.out.println("[Return]" + mSig);
 							units.insertBefore(Jimple.v().newAssignStmt(l_outPrint,
 									Jimple.v().newStaticFieldRef(Scene.v().getField("<java.lang.System: java.io.PrintStream out>").makeRef())
 									), u);
@@ -106,7 +105,8 @@ public class Soot {
 						}
 						public void caseReturnVoidStmt(ReturnVoidStmt rS) {
 							PatchingChain<Unit> units = b.getUnits();
-							String mSig = b.getMethod().getSignature().replace(",", " ");
+							String mSig = generateBytecodeSignature(b.getMethod().getBytecodeSignature());
+							System.out.println("[Return-void]" + mSig);
 							units.insertBefore(Jimple.v().newAssignStmt(l_outPrint,
 									Jimple.v().newStaticFieldRef(Scene.v().getField("<java.lang.System: java.io.PrintStream out>").makeRef())
 									), u);
@@ -143,6 +143,12 @@ public class Soot {
 		if (!outFile.renameTo(newOutFile))
 			throw (new Exception("Failed to rename soot instrumented app"));
 		}	catch (Exception e) {e.printStackTrace();}
+	}
+	
+	private static String generateBytecodeSignature(String methodInfo) {
+		String dexClassName = Grammar.javaToDexClassName(methodInfo.substring(1, methodInfo.indexOf(": ")));
+		String dexMethodSubsig = methodInfo.substring(methodInfo.indexOf(": ")+2, methodInfo.lastIndexOf(">"));
+		return dexClassName + "->" + dexMethodSubsig;
 	}
 	
 }
