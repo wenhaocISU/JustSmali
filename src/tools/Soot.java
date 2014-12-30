@@ -13,6 +13,7 @@ import soot.PackManager;
 import soot.PatchingChain;
 import soot.RefType;
 import soot.Scene;
+import soot.SceneTransformer;
 import soot.SootClass;
 import soot.SootMethod;
 import soot.Transform;
@@ -24,11 +25,41 @@ import soot.jimple.ReturnVoidStmt;
 import soot.jimple.StringConstant;
 import staticFamily.StaticApp;
 
+
 public class Soot {
+
+	public static void Template(File file) {
+
+		PackManager.v().getPack("wjtp").add(new Transform("wjtp.myTransform", new SceneTransformer() {
+					protected void internalTransform(String phaseName, Map<String, String> options) {
+						// this method will be called only once
+						System.out.println("WJTP");
+					}
+				}));
+
+		PackManager.v().getPack("jtp").add(new Transform("jtp.myTransform", new BodyTransformer() {
+					protected void internalTransform(Body b, String phaseName, Map<String, String> options) {
+						// this method will be called on each method in the DEX
+						System.out.println("JTP " + b.getMethod().getSignature());
+					}
+				}));
+
+		String[] args = {
+				"-d", Paths.appDataDir + file.getName() + "/soot/Jimples",
+				"-f", "J",
+				"-src-prec", "apk",
+				"-ire", "-allow-phantom-refs", "-w",
+				"-force-android-jar", Paths.androidJarPath,
+				"-process-path", file.getAbsolutePath() };
+		soot.Main.main(args);
+	}
 
 	private static int returnCounter = 0;
 	
+	
 	public static void InstrumentEveryMethod(StaticApp testApp){
+		
+		System.out.println("\nInstrumenting method information with Soot...\n");
 		
 		PackManager.v().getPack("jtp").add(new Transform("jtp.myTransform", new BodyTransformer() {
 			protected void internalTransform(final Body b, String phaseName,Map<String, String> options) {
@@ -94,7 +125,7 @@ public class Soot {
 		if (outFile.exists())
 			outFile.delete();
 		String[] args = {
-				"-d", testApp.outPath + "/soot/Instrumentation",
+				"-d", testApp.outPath,
 				"-f", "dex",
 				"-src-prec", "apk",
 				"-ire", "-allow-phantom-refs", "-w",
@@ -113,6 +144,5 @@ public class Soot {
 			throw (new Exception("Failed to rename soot instrumented app"));
 		}	catch (Exception e) {e.printStackTrace();}
 	}
-	
 	
 }

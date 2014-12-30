@@ -1,22 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="libs/soot-trunk.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
-	<classpathentry kind="lib" path="libs/apktool.jar"/>
-	<classpathentry kind="lib" path="sootLibs/asm-debug-all-5.0.3.jar"/>
-	<classpathentry kind="lib" path="sootLibs/AXMLPrinter2.jar"/>
-	<classpathentry kind="lib" path="sootLibs/dexlib2-2.0.3-dev.jar"/>
-	<classpathentry kind="lib" path="sootLibs/guava-16.0.jar"/>
-	<classpathentry kind="lib" path="sootLibs/hamcrest-all-1.3.jar"/>
-	<classpathentry kind="lib" path="sootLibs/heros.jar"/>
-	<classpathentry kind="lib" path="sootLibs/herosclasses-trunk.jar"/>
-	<classpathentry kind="lib" path="sootLibs/java_cup.jar"/>
-	<classpathentry kind="lib" path="sootLibs/junit-4.11.jar"/>
-	<classpathentry kind="lib" path="sootLibs/polyglot.jar"/>
-	<classpathentry kind="lib" path="sootLibs/sootclasses-trunk.jar"/>
-	<classpathentry kind="lib" path="sootLibs/sootjavadoc-trunk.jar"/>
-	<classpathentry kind="lib" path="sootLibs/sootsources-trunk.jar"/>
-	<classpathentry kind="lib" path="sootLibs/util-2.0.3-dev.jar"/>
-	<classpathentry kind="lib" path="libs/android.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

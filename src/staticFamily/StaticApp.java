@@ -12,10 +12,8 @@ public class StaticApp implements Serializable{
 
 	private File apkFile;
 	public String outPath;
-	private String signedAppPath;
 	private String packageName;
 	private List<StaticClass> classes = new ArrayList<StaticClass>();	
-	private ArrayList<PathSummary> pathSummaries = new ArrayList<PathSummary>();
 	
 	// Getters and Setters
 
@@ -95,14 +93,6 @@ public class StaticApp implements Serializable{
 		return result;
 	}
 
-	public String getSignedAppPath() {
-		return signedAppPath;
-	}
-
-	public void setSignedAppPath(String signedAppPath) {
-		this.signedAppPath = signedAppPath;
-	}
-
 	public ArrayList<PathSummary> getAllPathSummaries() {
 		ArrayList<PathSummary> result = new ArrayList<PathSummary>();
 		for (StaticClass c : this.classes)
@@ -118,5 +108,15 @@ public class StaticApp implements Serializable{
 	public ArrayList<PathSummary> getPathSummariesOfMethod(StaticMethod m) {
 		return m.getPathSummaries();
 	}
+
+	public String getSmaliAppPath() {
+		return outPath + "/" + apkFile.getName().substring(0, apkFile.getName().lastIndexOf(".apk")) + "_smali.apk";
+	}
+
+
+	public String getSootAppPath() {
+		return outPath + "/" + apkFile.getName().substring(0, apkFile.getName().lastIndexOf(".apk")) + "_soot.apk";
+	}
+
 	
 }
