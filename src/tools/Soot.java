@@ -69,7 +69,6 @@ public class Soot {
 				final SootMethod out_println = Scene.v().getSootClass("java.io.PrintStream").getMethod("void println(java.lang.String)");
 				PatchingChain<Unit> units = b.getUnits();
 				String mSig = generateBytecodeSignature(b.getMethod().getBytecodeSignature());
-				System.out.println("[beginning]" + mSig);
 				// first instrument the first line
 				Iterator<Unit> unitsIT = b.getUnits().snapshotIterator();
 				int hasThis = 1;
@@ -94,7 +93,6 @@ public class Soot {
 						public void caseReturnStmt(ReturnStmt rS) {
 							PatchingChain<Unit> units = b.getUnits();
 							String mSig = generateBytecodeSignature(b.getMethod().getBytecodeSignature());
-							System.out.println("[Return]" + mSig);
 							units.insertBefore(Jimple.v().newAssignStmt(l_outPrint,
 									Jimple.v().newStaticFieldRef(Scene.v().getField("<java.lang.System: java.io.PrintStream out>").makeRef())
 									), u);
@@ -106,7 +104,6 @@ public class Soot {
 						public void caseReturnVoidStmt(ReturnVoidStmt rS) {
 							PatchingChain<Unit> units = b.getUnits();
 							String mSig = generateBytecodeSignature(b.getMethod().getBytecodeSignature());
-							System.out.println("[Return-void]" + mSig);
 							units.insertBefore(Jimple.v().newAssignStmt(l_outPrint,
 									Jimple.v().newStaticFieldRef(Scene.v().getField("<java.lang.System: java.io.PrintStream out>").makeRef())
 									), u);
