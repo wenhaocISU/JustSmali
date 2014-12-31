@@ -49,7 +49,9 @@ public class Parser {
 		for (File f : smaliFolder.listFiles())
 			initClasses(f);
 		try {
-			
+			smaliFolder.renameTo(new File(staticApp.outPath + "/apktool/originalSmali/"));
+			File newSmali = new File(staticApp.outPath + "/apktool/newSmali");
+			newSmali.renameTo(new File(staticApp.outPath + "/apktool/smali"));
 			parseFiles();
 			
 		} catch (Exception e) {e.printStackTrace();}
