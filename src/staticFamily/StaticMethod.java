@@ -255,25 +255,6 @@ public class StaticMethod  implements Serializable{
 		this.pathSummaries = pathSummaries;
 	}
 
-	public int getMaxPSCount(StaticApp staticApp) {
-		int i = 1;
-		for (StaticStmt s : this.smaliStmts) {
-			if (s instanceof IfStmt)
-				i = i * 2;
-			else if (s instanceof SwitchStmt) {
-				SwitchStmt ss = (SwitchStmt) s;
-				i = i * (ss.getSwitchMap(this).keySet().size() + 1);
-			}
-			else if (s instanceof InvokeStmt) {
-				InvokeStmt ss = (InvokeStmt) s;
-				StaticMethod targetM = staticApp.findMethod(ss.getTargetSig());
-				if (targetM != null) {
-					i = i * targetM.getMaxPSCount(staticApp);
-				}
-			}
-		}
-		return i;
-	}
 	
 	
 }
