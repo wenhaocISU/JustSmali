@@ -38,10 +38,10 @@ public class StaticInfo {
 			Apktool.extractAPK(staticApp);
 			Parser.parseSmali(staticApp);
 			parseManifest();
-			saveInfoFile();
+			saveStaticApp(staticApp);
 		}
 		else {
-			loadInfoFile();
+			loadStaticApp();
 		}
 		
 		File instrumentedAPK_smali = new File(staticApp.getSmaliAppPath());
@@ -120,7 +120,7 @@ public class StaticInfo {
 		}
 	}
 	
-	private static void saveInfoFile() {
+	public static void saveStaticApp(StaticApp staticApp) {
 		System.out.print("\nSaving StaticApp into file...  ");
 		File infoFile = new File(staticApp.outPath + "/static.info");
 		if (infoFile.exists())
@@ -133,7 +133,7 @@ public class StaticInfo {
 		}	catch (Exception e) {e.printStackTrace();}
 	}
 
-	private static void loadInfoFile() {
+	private static void loadStaticApp() {
 		System.out.print("\nLoading StaticApp...  ");
 		File infoFile = new File(staticApp.outPath + "/static.info");
 			ObjectInputStream in = null;
@@ -150,7 +150,7 @@ public class StaticInfo {
 					Apktool.extractAPK(staticApp);
 					Parser.parseSmali(staticApp);
 					parseManifest();
-					saveInfoFile();
+					saveStaticApp(staticApp);
 				}
 				else e.printStackTrace();
 			}
