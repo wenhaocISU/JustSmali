@@ -237,7 +237,7 @@ public class Parser {
 						m.addSmaliStmt(s);
 					}
 				}
-				c.addMethod(m);
+				//c.addMethod(m);
 			}
 		}
 		File newF = new File(staticApp.outPath + "/apktool/newSmali/" + c.getJavaName().replace(".", "/") + ".smali");
