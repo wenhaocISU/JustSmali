@@ -37,9 +37,9 @@ public class Parser {
 	private static File smaliFolder;
 	private static BufferedReader in;
 	private static String classSmali;
-	private static ArrayList<String> oldLines = new ArrayList<String>();
 	private static BlockLabel label;
 	private static boolean normalLabelAlreadyUsed;
+	private static ArrayList<String> oldLines = new ArrayList<String>();
 	
 	public static void parseSmali(StaticApp theApp){
 		
@@ -66,9 +66,11 @@ public class Parser {
 					className.indexOf(smaliFolder.getAbsolutePath()) + smaliFolder.getAbsolutePath().length()+1,
 					className.lastIndexOf(".smali"));
 			className = className.replace(File.separator, ".");
-			StaticClass c = new StaticClass();
+			final StaticClass c = new StaticClass();
 			c.setJavaName(className);
 			c.setInDEX(true);
+			//TODO move source line number and init methods here
+			getLargestLineNumberAndMightAsWellGetOldLinesAndInitMethodBodies(f, c);
 			staticApp.addClass(c);
 		}
 	}
@@ -86,7 +88,8 @@ public class Parser {
 	private static int paramIndex = 0;
 	
 	private static StaticClass parseSmaliCode(File f, final StaticClass c) throws Exception{
-		int largestLineNumber = getLargestLineNumberAndMightAsWellGetOldLines(f);
+		int largestLineNumber = c.largestOriginalSourceLineNumber + 1;
+		oldLines = c.getOldLines();
 		classSmali = "";
 		index = 0;
 		int maxLine = oldLines.size();
@@ -117,7 +120,8 @@ public class Parser {
 			if (line.startsWith(".method ")) {
 				int originalLineNumber = -1, stmtID = 0;
 				paramIndex = 0;
-				final StaticMethod m = initMethod(line, c);
+				//TODO here instead of initMethod, just find the method
+				final StaticMethod m = c.getMethodBySubSig(line.substring(line.lastIndexOf(" ")+1));
 				label = new BlockLabel();
 				label.setNormalLabels(new ArrayList<String>(Arrays.asList(":main")));
 				normalLabelAlreadyUsed = false;
@@ -243,6 +247,7 @@ public class Parser {
 			out.write(classSmali);
 			out.close();
 		}	catch (Exception e) {e.printStackTrace();}
+		c.setOldLines(new ArrayList<String>());
 		return c;
 	}
 	
@@ -361,13 +366,10 @@ public class Parser {
 			s.setTargetSig(methodSig);
 			String tgtCN = methodSig.split("->")[0];
 			StaticClass tgtC = staticApp.findClassByDexName(tgtCN);
-			if (tgtC != null) {
-				StaticMethod tgtM = tgtC.getMethod(methodSig);
-				if (tgtM == null) {
-					tgtM = new StaticMethod();
-					tgtM.setSmaliSignature(methodSig);
-					tgtC.addMethod(tgtM);
-				}
+			StaticMethod tgtM = staticApp.findMethod(methodSig);
+			if (tgtC != null && tgtM != null) {
+				//TODO after the change, if tgtM is null then
+				//it definitely doesn't have a body, so no need to create one}
 				tgtM.addInCallSourceSig(m.getSmaliSignature());
 				m.addOutCallTargetSigs(tgtM.getSmaliSignature());
 			}
@@ -591,13 +593,12 @@ public class Parser {
 	}
 
 	private static StaticMethod initMethod(String line, StaticClass c) {
+		//TODO this thing will be moved into that super long method
 		String subSig = line.substring(line.lastIndexOf(" ")+1);
 		String fullSig = c.getDexName() + "->" + subSig;
-		StaticMethod m = c.getMethod(fullSig);
-		if (m == null) {
-			m = new StaticMethod();
-			m.setSmaliSignature(fullSig);
-		}
+		StaticMethod m = new StaticMethod();
+		m = new StaticMethod();
+		m.setSmaliSignature(fullSig);
 		String returnType = subSig.substring(subSig.indexOf(")")+1);
 		m.setReturnType(Grammar.dexToJavaTypeName(returnType));
 		String parameters = subSig.substring(subSig.indexOf("(") + 1, subSig.indexOf(")"));
@@ -762,22 +763,26 @@ public class Parser {
 		}
 	}
 	
-	private static int getLargestLineNumberAndMightAsWellGetOldLines(File f) {
-		int result = 0;
+	private static void getLargestLineNumberAndMightAsWellGetOldLinesAndInitMethodBodies(File f, StaticClass c) {
+		//TODO this method will be called before parsing
 		try {
 			in = new BufferedReader(new FileReader(f));
 			String line;
 			oldLines = new ArrayList<String>();
 			while ((line = in.readLine())!=null) {
 				oldLines.add(line);
-				if (!line.startsWith("    .line "))
-					continue;
-				int current = Integer.parseInt(line.substring(line.lastIndexOf(" ")+1));
-				if (result < current)
-					result = current;
+				if (line.startsWith("    .line ")) {
+					int current = Integer.parseInt(line.substring(line.lastIndexOf(" ")+1));
+					if (c.largestOriginalSourceLineNumber < current)
+						c.largestOriginalSourceLineNumber = current;
+				}
+				else if (line.startsWith(".method ")) {
+					StaticMethod m = initMethod(line, c);
+					c.addMethod(m);
+				}
 			}
+			c.setOldLines(oldLines);
 		}	catch (Exception e) {e.printStackTrace();}
-		return result+1;
 	}
 
 	

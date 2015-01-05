@@ -64,7 +64,7 @@ public class StaticApp implements Serializable{
 		StaticClass c = findClassByDexName(cN);
 		if (c == null)
 			return null;
-		return c.getMethod(sig);
+		return c.getMethodByFullSig(sig);
 	}
 	
 	public StaticField findField(String sig) {

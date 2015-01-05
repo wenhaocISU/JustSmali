@@ -45,7 +45,7 @@ public class StaticMethod  implements Serializable{
 	}
 	
 	public String getSmaliSubSignature() {
-		return this.smaliSignature.substring(1, smaliSignature.length()-1).split("->")[1];
+		return this.smaliSignature.split("->")[1];
 	}
 	
 	public String getName() {

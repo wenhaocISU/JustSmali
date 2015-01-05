@@ -24,6 +24,8 @@ public class StaticClass  implements Serializable{
 	private boolean isInnerClass;
 	private boolean isActivity, isMainActivity;
 	
+	public int largestOriginalSourceLineNumber = -1;
+	private ArrayList<String> oldLines = new ArrayList<String>();
 	
 	// Getters and Setters
 	
@@ -160,9 +162,16 @@ public class StaticClass  implements Serializable{
 		return null;
 	}
 	
-	public StaticMethod getMethod(String mSig) {
+	public StaticMethod getMethodByFullSig(String mSig) {
 		for (StaticMethod m : methods)
 			if (m.getSmaliSignature().equals(mSig))
+				return m;
+		return null;
+	}
+	
+	public StaticMethod getMethodBySubSig(String mSubSig) {
+		for (StaticMethod m : methods)
+			if (m.getSmaliSubSignature().equals(mSubSig))
 				return m;
 		return null;
 	}
@@ -172,6 +181,12 @@ public class StaticClass  implements Serializable{
 			if (m.getName().equals(mName) && m.getSourceLineNumbers().contains(lineNo))
 				return m;
 		return null;
+	}
+	public ArrayList<String> getOldLines() {
+		return oldLines;
+	}
+	public void setOldLines(ArrayList<String> oldLines) {
+		this.oldLines = oldLines;
 	}
 	
 }
