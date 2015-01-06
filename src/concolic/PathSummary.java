@@ -121,6 +121,16 @@ public class PathSummary implements Serializable{
 		int index = getIndexOfOperationWithLeft(newO.getLeft());
 		// scenario 1
 		if (!newSymbol) {
+			if (newO.getLeft().startsWith("$Finstance")) {
+				String prefix = newO.getLeft().substring(0, newO.getLeft().lastIndexOf(">>")+2);
+				String objectName = newO.getLeft().substring(newO.getLeft().lastIndexOf(">>")+2);
+				for (Operation o : this.symbolicStates) {
+					if (o.getLeft().equals(objectName)) {
+						newO.setLeft(prefix + o.getRight());
+						break;
+					}
+				}
+			}
 			boolean ADone = false, BDone = false;
 			if (newO.getRightA().startsWith("#"))	ADone = true;
 			if (newO.isNoOp() || newO.getRightB().startsWith("#"))	BDone = true;
