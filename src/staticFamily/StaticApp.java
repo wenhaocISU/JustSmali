@@ -13,7 +13,7 @@ public class StaticApp implements Serializable{
 	private File apkFile;
 	public String outPath;
 	private String packageName;
-	private List<StaticClass> classes = new ArrayList<StaticClass>();	
+	private List<StaticClass> classes = new ArrayList<StaticClass>();
 	
 	// Getters and Setters
 

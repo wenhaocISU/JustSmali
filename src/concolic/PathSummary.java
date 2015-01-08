@@ -119,7 +119,7 @@ public class PathSummary implements Serializable{
 			Expression obj = (Expression) left.getChildAt(1);
 			Expression updatedObj = this.findExistingExpression(obj);
 			if (updatedObj != null) {
-				left.remove(0);
+				left.remove(1);
 				left.insert(updatedObj, 1);
 			}
 		}

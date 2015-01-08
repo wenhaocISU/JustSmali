@@ -235,7 +235,6 @@ public class Parser {
 						m.addSmaliStmt(s);
 					}
 				}
-				//c.addMethod(m);
 			}
 		}
 		File newF = new File(staticApp.outPath + "/apktool/newSmali/" + c.getJavaName().replace(".", "/") + ".smali");
@@ -508,7 +507,7 @@ public class Parser {
 		if (line.startsWith(":array_")) {
 			String aLabel = line;
 			String tableContent = "";
-			while (!line.equals(".end array_data") && index < oldLines.size()) {
+			while (!line.equals(".end array-data") && index < oldLines.size()) {
 				line = oldLines.get(index++);
 				classSmali += line + "\n";
 				m.setSmaliCode(m.getSmaliCode() + line + "\n");
