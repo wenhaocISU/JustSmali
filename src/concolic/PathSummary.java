@@ -96,11 +96,12 @@ public class PathSummary implements Serializable{
 		Expression theAssignExpr = this.symbolicStates.get(index);
 		theAssignExpr.remove(0);
 		theAssignExpr.insert(new Expression("$return"), 0);
+		Expression assignRight = (Expression) theAssignExpr.getChildAt(1);
 		for (int i = index+1; i < this.symbolicStates.size(); i++) {
 			Expression ex = this.symbolicStates.get(i);
 			Expression left = (Expression) ex.getChildAt(0);
-			if (ExpressionContains(left, vName))
-				left.replace(new Expression(vName), new Expression("$return"));
+			if (ExpressionContains(left, assignRight))
+				left.replace(assignRight, new Expression("$return"));
 		}
 	}
 	
@@ -113,6 +114,15 @@ public class PathSummary implements Serializable{
 		//5  v0 = $return
 		Expression left = (Expression) newEx.getChildAt(0);
 		Expression right = (Expression) newEx.getChildAt(1);
+		// if left is '$Finstance>>a>>v0', replace v0 first
+		if (left.getUserObject().toString().equals("$Finstance")) {
+			Expression obj = (Expression) left.getChildAt(1);
+			Expression updatedObj = this.findExistingExpression(obj);
+			if (updatedObj != null) {
+				left.remove(0);
+				left.insert(updatedObj, 1);
+			}
+		}
 		int index = getIndexOfOperationWithLeft(left);
 		String op = right.getUserObject().toString();
 		if (op.equals("$return")) {
@@ -121,12 +131,13 @@ public class PathSummary implements Serializable{
 			Expression assignEx = this.symbolicStates.get(assignIndex);
 			assignEx.remove(0);
 			assignEx.insert(left, 0);
+			Expression assignRight = (Expression) assignEx.getChildAt(1);
 			ArrayList<Expression> toRemove = new ArrayList<Expression>();
 			for (int i = assignIndex+1; i < this.symbolicStates.size(); i++) {
 				Expression ex = this.symbolicStates.get(i);
 				Expression thisLeft = (Expression) ex.getChildAt(0);
 				if (ExpressionContains(thisLeft, "$return"))
-					thisLeft.replace(new Expression("$return"), left);
+					thisLeft.replace(new Expression("$return"), assignRight);
 				int thisIndex = getIndexOfOperationWithLeft(thisLeft);
 				if (thisIndex != i && thisIndex > -1)
 					toRemove.add(ex.clone());
