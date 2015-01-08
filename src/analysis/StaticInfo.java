@@ -26,6 +26,7 @@ import tools.Soot;
 public class StaticInfo {
 
 	private static StaticApp staticApp;
+	public static boolean instrumentAPKs = true;
 	
 	public static StaticApp initAnalysis(String apkPath, boolean forceAllSteps) {
 		
@@ -45,17 +46,17 @@ public class StaticInfo {
 		}
 		
 		File instrumentedAPK_smali = new File(staticApp.getSmaliAppPath());
-		if (forceAllSteps || !instrumentedAPK_smali.exists()) {
+		
+		if (instrumentAPKs && (forceAllSteps || !instrumentedAPK_smali.exists())) {
 			Apktool.recompileAPK(staticApp);
 			Others.signAPK(staticApp);
 		}
 		
 		File instrumentedAPK_soot = new File(staticApp.getSootAppPath());
-		if (forceAllSteps || !instrumentedAPK_soot.exists()) {
+		if (instrumentAPKs && (forceAllSteps || !instrumentedAPK_soot.exists())) {
 			Soot.InstrumentEveryMethod(staticApp);
 			Others.signAPK(staticApp);
 		}
-		
 		
 		System.out.println("\nAnalysis Initialization Complete.\n");
 		return staticApp;

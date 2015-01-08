@@ -29,7 +29,7 @@ import staticFamily.StaticClass;
 import staticFamily.StaticField;
 import staticFamily.StaticMethod;
 import staticFamily.StaticStmt;
-import concolic.Operation;
+import concolic.Expression;
 
 public class Parser {
 
@@ -69,7 +69,6 @@ public class Parser {
 			final StaticClass c = new StaticClass();
 			c.setJavaName(className);
 			c.setInDEX(true);
-			//TODO move source line number and init methods here
 			getLargestLineNumberAndMightAsWellGetOldLinesAndInitMethodBodies(f, c);
 			staticApp.addClass(c);
 		}
@@ -120,7 +119,6 @@ public class Parser {
 			if (line.startsWith(".method ")) {
 				int originalLineNumber = -1, stmtID = 0;
 				paramIndex = 0;
-				//TODO here instead of initMethod, just find the method
 				final StaticMethod m = c.getMethodBySubSig(line.substring(line.lastIndexOf(" ")+1));
 				label = new BlockLabel();
 				label.setNormalLabels(new ArrayList<String>(Arrays.asList(":main")));
@@ -277,17 +275,17 @@ public class Parser {
 			ConstStmt s = new ConstStmt();
 			String arguments[] = line.substring(line.indexOf(" ")+1).split(", ");
 			s.setvA(arguments[0]);
-			s.setvB(arguments[1]);
-			s.setHasOperation(true);
-			Operation o = new Operation();
-			o.setLeft(s.getV());
-			o.setNoOp(true);
-			o.setRightA("#" + s.getValue());
+			s.setvB(arguments[1]);			
+			String left = s.getV();
+			String right = "#" + s.getValue();
 			if (line.startsWith("const-string"))
-				o.setRightA("#string>>" + s.getValue());
+				right = "#string>>" + s.getValue();
 			if (line.startsWith("const-class"))
-				o.setRightA("#class>>" + s.getValue());
-			s.setOperation(o);
+				right = "#class>>" + s.getValue();
+			Expression ex = new Expression("=");
+			ex.add(new Expression(left));
+			ex.add(new Expression(right));
+			s.setExpression(ex);
 			return s;
 		}
 		if (StmtFormat.isGetField(line) || StmtFormat.isPutField(line)) {
@@ -295,7 +293,6 @@ public class Parser {
 			s.setIsGet(StmtFormat.isGetField(line));
 			s.setIsPut(StmtFormat.isPutField(line));
 			s.setGeneratesSymbol(s.isGet());
-			s.setHasOperation(s.isPut());
 			String arguments[] = line.substring(line.indexOf(" ")+1).split(", ");
 			s.setvA(arguments[0]);
 			s.setvB(arguments[1]);
@@ -304,21 +301,6 @@ public class Parser {
 			String fieldSig = s.getvC();
 			if (s.isStatic())	fieldSig = s.getvB();
 			s.setFieldSig(fieldSig);
-			Operation o = new Operation();
-			o.setNoOp(true);
-			if (s.isPut()) {
-				if (s.isStatic())
-					o.setLeft("$Fstatic>>" + s.getFieldSig());
-				else o.setLeft("$Finstance>>" + s.getFieldSig() + ">>" + s.getObject());
-				o.setRightA(s.getSrcV());
-			}
-			else {
-				o.setLeft(s.getDestV());
-				if (s.isStatic())
-					o.setRightA("$Fstatic>>" + s.getFieldSig());
-				else o.setRightA("$Finstance>>" + s.getFieldSig() + ">>" + s.getObject());
-			}
-			s.setOperation(o);
 			String tgtCN = fieldSig.split("->")[0];
 			String fSubSig = fieldSig.split("->")[1];
 			StaticClass tgtC = staticApp.findClassByDexName(tgtCN);
@@ -332,6 +314,17 @@ public class Parser {
 				tgtF.addInCallSourceSig(m.getSmaliSignature());
 				m.addFieldRefSigs(tgtF.getDexSignature());
 			}
+			String fieldOp = "$Finstance";
+			if (s.isStatic()) fieldOp = "$Fstatic";
+			Expression fieldExpr = new Expression(fieldOp);
+			fieldExpr.add(new Expression(s.getFieldSig()));
+			if (!s.isStatic())
+				fieldExpr.add(new Expression(s.getObject()));
+			Expression vExpr = new Expression(s.getvA());
+			Expression ex = new Expression("=");
+			if (s.isPut()) {  ex.add(fieldExpr); ex.add(vExpr);}
+			else 			{ ex.add(vExpr);	 ex.add(fieldExpr);}
+			s.setExpression(ex);
 			return s;
 		}
 		if (StmtFormat.isGoto(line)) {
@@ -368,8 +361,6 @@ public class Parser {
 			StaticClass tgtC = staticApp.findClassByDexName(tgtCN);
 			StaticMethod tgtM = staticApp.findMethod(methodSig);
 			if (tgtC != null && tgtM != null) {
-				//TODO after the change, if tgtM is null then
-				//it definitely doesn't have a body, so no need to create one}
 				tgtM.addInCallSourceSig(m.getSmaliSignature());
 				m.addOutCallTargetSigs(tgtM.getSmaliSignature());
 			}
@@ -383,11 +374,10 @@ public class Parser {
 				if (lastS instanceof InvokeStmt) {
 					((InvokeStmt) lastS).setResultsMoved(true);
 					s.setGeneratesSymbol(true);
-					Operation o = new Operation();
-					o.setLeft(s.getvA());
-					o.setNoOp(true);
-					o.setRightA("$return");
-					s.setOperation(o);
+					Expression ex = new Expression("=");
+					ex.add(new Expression(s.getvA()));
+					ex.add(new Expression("$return"));
+					s.setExpression(ex);
 					s.setResultMovedFrom(m.getSmaliStmts().size()-1);
 				}
 				else if (lastS instanceof NewStmt) {
@@ -400,11 +390,10 @@ public class Parser {
 				String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
 				s.setvA(arguments[0]);
 				s.setvB(arguments[1]);
-				s.setHasOperation(true);
-				Operation o = new Operation();
-				o.setLeft(s.getDestV());
-				o.setNoOp(true);
-				o.setRightA(s.getSourceV());
+				Expression ex = new Expression("=");
+				ex.add(new Expression(s.getDestV()));
+				ex.add(new Expression(s.getSourceV()));
+				s.setExpression(ex);
 			}
 			return s;
 		}
@@ -415,13 +404,11 @@ public class Parser {
 			else s.setNewArray(true);
 			s.setArguments(line.substring(line.indexOf(" ")+1));
 			if (s.isNewInstance()) {
-				s.setHasOperation(true);
 				String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
-				Operation o = new Operation();
-				o.setLeft(arguments[0]);
-				o.setNoOp(true);
-				o.setRightA("synew>>" + arguments[1]);
-				s.setOperation(o);
+				Expression ex = new Expression("=");
+				ex.add(new Expression(arguments[0]));
+				ex.add(new Expression("$new>>" + arguments[1]));
+				s.setExpression(ex);
 			}
 			return s;
 		}
@@ -457,39 +444,39 @@ public class Parser {
 			String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
 			s.setvA(arguments[0]);
 			s.setvB(arguments[1]);
-			s.setHasOperation(true);
 			if (arguments.length > 2) {
 				s.setHas3rdConstArg(true);
 				s.setvC("#" + arguments[2]);
 			}
 			if (line.startsWith("instance-of") || line.startsWith("array-length"))
 				return s;
-			Operation o = new Operation();
+			Expression ex = new Expression("=");
 			if (line.startsWith("int-to-") || line.startsWith("long-to-") ||
 				line.startsWith("float-to-") || line.startsWith("double-to-"))
 			{
-				o.setNoOp(true);
-				o.setLeft(s.getvA());
-				o.setRightA(s.getvB());
+				ex.add(new Expression(s.getvA()));
+				ex.add(new Expression(s.getvB()));
 			}
 			else
 			{
 				String op = line.substring(0, line.indexOf(" "));
 				op = op.split("-")[0];
-				o.setOp(op);
-				o.setLeft(s.getvA());
+				Expression left = new Expression(s.getvA());
+				Expression right = new Expression(op);
 				if (s.has3rdConstArg()) {
 					// vA = vB + #C
-					o.setRightA(s.getvB());
-					o.setRightB(s.getvC());
+					right.add(new Expression(s.getvB()));
+					right.add(new Expression(s.getvC()));
 				}
 				else {
 					// vA = vA + vB
-					o.setRightA(s.getvA());
-					o.setRightB(s.getvB());
+					right.add(new Expression(s.getvA()));
+					right.add(new Expression(s.getvB()));
 				}
+				ex.add(left);
+				ex.add(right);
 			}
-			s.setOperation(o);
+			s.setExpression(ex);
 			return s;
 		}
 		if (StmtFormat.isV3OP(line)) {
@@ -498,17 +485,18 @@ public class Parser {
 			s.setvA(arguments[0]);
 			s.setvB(arguments[1]);
 			s.setvC(arguments[2]);
-			s.setHasOperation(true);
 			if (line.startsWith("cmp"))
 				return s;
-			Operation o = new Operation();
+			Expression ex = new Expression("=");
 			String op = line.substring(0, line.indexOf(" "));
 			op = op.split("-")[0];
-			o.setOp(op);
-			o.setLeft(s.getvA());
-			o.setRightA(s.getvB());
-			o.setRightB(s.getvC());
-			s.setOperation(o);
+			Expression left = new Expression(s.getvA());
+			Expression right = new Expression(op);
+			right.add(new Expression(s.getvB()));
+			right.add(new Expression(s.getvC()));
+			ex.add(left);
+			ex.add(right);
+			s.setExpression(ex);
 			return s;
 		}
 		StaticStmt s = new StaticStmt();
@@ -593,7 +581,6 @@ public class Parser {
 	}
 
 	private static StaticMethod initMethod(String line, StaticClass c) {
-		//TODO this thing will be moved into that super long method
 		String subSig = line.substring(line.lastIndexOf(" ")+1);
 		String fullSig = c.getDexName() + "->" + subSig;
 		StaticMethod m = new StaticMethod();
@@ -764,7 +751,6 @@ public class Parser {
 	}
 	
 	private static void getLargestLineNumberAndMightAsWellGetOldLinesAndInitMethodBodies(File f, StaticClass c) {
-		//TODO this method will be called before parsing
 		try {
 			in = new BufferedReader(new FileReader(f));
 			String line;

@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import smali.BlockLabel;
-import concolic.Operation;
+import concolic.Expression;
 
 @SuppressWarnings("serial")
 public class StaticStmt implements Serializable{
@@ -28,8 +28,7 @@ public class StaticStmt implements Serializable{
 	
 	private boolean generatesSymbol = false; // iget, sget, invoke&result_moved, 
 	
-	private boolean hasOperation = false;
-	private Operation operation = new Operation();
+	private Expression expression = null;
 	
 	private boolean updatesPathCondition = false;
 	
@@ -168,21 +167,8 @@ public class StaticStmt implements Serializable{
 		this.generatesSymbol = generatesSymbol;
 	}
 
-	public boolean hasOperation() {
-		return hasOperation;
-	}
 
-	public void setHasOperation(boolean hasOperation) {
-		this.hasOperation = hasOperation;
-	}
 
-	public Operation getOperation() {
-		return operation;
-	}
-
-	public void setOperation(Operation operation) {
-		this.operation = operation;
-	}
 	
 	public Map<String, String> getvDebugInfo() {
 		return vDebugInfo;
@@ -206,6 +192,18 @@ public class StaticStmt implements Serializable{
 
 	public void setEndsMethod(boolean endsMethod) {
 		this.endsMethod = endsMethod;
+	}
+
+	public Expression getExpression() {
+		return expression.clone();
+	}
+
+	public void setExpression(Expression expression) {
+		this.expression = expression;
+	}
+
+	public boolean hasExpression() {
+		return (this.expression != null);
 	}
 
 }

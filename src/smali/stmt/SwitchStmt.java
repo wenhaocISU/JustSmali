@@ -6,7 +6,7 @@ import java.util.Map;
 
 import staticFamily.StaticMethod;
 import staticFamily.StaticStmt;
-import concolic.Condition;
+import concolic.Expression;
 
 @SuppressWarnings("serial")
 public class SwitchStmt extends StaticStmt{
@@ -71,23 +71,21 @@ public class SwitchStmt extends StaticStmt{
 		return m.getSmaliStmts().get(getStmtID()+1).getSourceLineNumber();
 	}
 	
-	public Condition getSwitchCondition(int value) {
+	public Expression getSwitchCondition(int value) {
 		if (!this.switchMap.containsKey(value))
 			return null;
-		Condition result = new Condition();
-		result.setLeft(getSwitchV());
-		result.setOp("=");
-		result.setRight("#" + value);
+		Expression result = new Expression("==");
+		result.add(new Expression(getSwitchV()));
+		result.add(new Expression("#" + value));
 		return result;
 	}
 	
-	public ArrayList<Condition> getFlowThroughConditions() {
-		ArrayList<Condition> result = new ArrayList<Condition>();
+	public ArrayList<Expression> getFlowThroughConditions() {
+		ArrayList<Expression> result = new ArrayList<Expression>();
 		for (int value : this.switchMap.keySet()) {
-			Condition cond = new Condition();
-			cond.setLeft(getSwitchV());
-			cond.setOp("!=");
-			cond.setRight("#" + value);
+			Expression cond = new Expression("!=");
+			cond.add(new Expression(getSwitchV()));
+			cond.add(new Expression("#" + value));
 			result.add(cond);
 		}
 		return result;

@@ -9,8 +9,8 @@ public class PathSummary implements Serializable{
 	private String methodSignature = "";
 	
 	private ArrayList<String> executionLog = new ArrayList<String>();
-	private ArrayList<Condition> pathCondition = new ArrayList<Condition>();
-	private ArrayList<Operation> symbolicStates = new ArrayList<Operation>();
+	private ArrayList<Expression> symbolicStates = new ArrayList<Expression>();
+	private ArrayList<Expression> pathCondition = new ArrayList<Expression>();
 	
 	private ArrayList<String> pathChoices = new ArrayList<String>();
 	
@@ -22,23 +22,23 @@ public class PathSummary implements Serializable{
 		this.executionLog.add(newLine);
 	}
 
-	public ArrayList<Condition> getPathCondition() {
+	public ArrayList<Expression> getPathCondition() {
 		return pathCondition;
 	}
 
-	public void setPathCondition(ArrayList<Condition> pathConditions) {
+	public void setPathCondition(ArrayList<Expression> pathConditions) {
 		this.pathCondition = pathConditions;
 	}
 
-	public ArrayList<Operation> getSymbolicStates() {
+	public ArrayList<Expression> getSymbolicStates() {
 		return symbolicStates;
 	}
 
-	public void addSymbolicState(Operation newO) {
+	public void addSymbolicState(Expression newO) {
 		this.symbolicStates.add(newO);
 	}
 	
-	public void setSymbolicStates(ArrayList<Operation> symbolicStates) {
+	public void setSymbolicStates(ArrayList<Expression> symbolicStates) {
 		this.symbolicStates = symbolicStates;
 	}
 	
@@ -46,12 +46,12 @@ public class PathSummary implements Serializable{
 		PathSummary result = new PathSummary();
 		for (String s : executionLog)
 			result.addExecutionLog(s);
-		ArrayList<Operation> sStates = new ArrayList<Operation>();
-		for (Operation o : symbolicStates)
+		ArrayList<Expression> sStates = new ArrayList<Expression>();
+		for (Expression o : symbolicStates)
 			sStates.add(o);
 		result.setSymbolicStates(sStates);
-		ArrayList<Condition> pCond = new ArrayList<Condition>();
-		for (Condition cond : pathCondition)
+		ArrayList<Expression> pCond = new ArrayList<Expression>();
+		for (Expression cond : pathCondition)
 			pCond.add(cond);
 		result.setPathCondition(pCond);
 		ArrayList<String> pathChoices = new ArrayList<String>();
@@ -75,140 +75,156 @@ public class PathSummary implements Serializable{
 			this.pathChoices.add(pathChoice);
 	}
 	
-	public void updatePathCondition(Condition newCond) {
-		boolean leftDone = false, rightDone = false;
-		if (newCond.getRight().startsWith("#"))
-			rightDone = true;
-		for (Operation o : this.symbolicStates) {
-			if (!leftDone && o.getLeft().equals(newCond.getLeft())) {
-				newCond.setLeft(o.getRight());
-				leftDone = true;
-			}
-			if (!rightDone && o.getLeft().equals(newCond.getRight())) {
-				newCond.setRight(o.getRight());
-				rightDone = true;
-			}
-			if (leftDone && rightDone)
-				break;
+	public void updatePathCondition(Expression newCond) {
+		Expression left = (Expression) newCond.getChildAt(0);
+		Expression right = (Expression) newCond.getChildAt(1);
+		Expression updatedLeft = this.findExistingExpression(left);
+		newCond.remove(0);
+		newCond.insert(updatedLeft, 0);
+		if (!right.getUserObject().toString().startsWith("#")) {
+			Expression updatedRight = this.findExistingExpression(right);
+			newCond.remove(1);
+			newCond.insert(updatedRight, 1);
 		}
 		this.pathCondition.add(newCond);
 	}
-	
+	                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
 	public void updateReturnSymbol(String vName) throws Exception{
 		int index = getIndexOfOperationWithLeft(vName);
 		if (index < 0)
 			throw (new Exception("Can't find the assignment of returned variable '" + vName + "'from symbolicStates"));
-		Operation theAssignO = this.symbolicStates.get(index);
-		theAssignO.setLeft("$return");
-		if (theAssignO.isNoOp()) {
-			for (int i = index+1; i < this.symbolicStates.size(); i++) {
-				Operation o = this.symbolicStates.get(i);
-				if (o.getLeft().endsWith(theAssignO.getRightA())) {
-					String newLeft = o.getLeft().replace(theAssignO.getRightA(), "$return");
-					o.setLeft(newLeft);
-				}
-			}
+		Expression theAssignExpr = this.symbolicStates.get(index);
+		theAssignExpr.remove(0);
+		theAssignExpr.insert(new Expression("$return"), 0);
+		for (int i = index+1; i < this.symbolicStates.size(); i++) {
+			Expression ex = this.symbolicStates.get(i);
+			Expression left = (Expression) ex.getChildAt(0);
+			if (ExpressionContains(left, vName))
+				left.replace(new Expression(vName), new Expression("$return"));
 		}
 	}
 	
-	public void updateSymbolicStates(Operation oToAdd, boolean newSymbol) {
-		// only 4 possible scenarios:
-		// 1. vi = vm op vn
-		// 2. vi = $return
-		// 3. vi = $Finstance>>..>>vm
-		// 4. vi = $Fstatic>>... (this one no need to replace anything)
-		Operation newO = oToAdd.clone();
-		int index = getIndexOfOperationWithLeft(newO.getLeft());
-		// scenario 1
-		if (!newSymbol) {
-			if (newO.getLeft().startsWith("$Finstance")) {
-				String prefix = newO.getLeft().substring(0, newO.getLeft().lastIndexOf(">>")+2);
-				String objectName = newO.getLeft().substring(newO.getLeft().lastIndexOf(">>")+2);
-				for (Operation o : this.symbolicStates) {
-					if (o.getLeft().equals(objectName)) {
-						newO.setLeft(prefix + o.getRight());
-						break;
-					}
-				}
-			}
-			boolean ADone = false, BDone = false;
-			if (newO.getRightA().startsWith("#"))	ADone = true;
-			if (newO.isNoOp() || newO.getRightB().startsWith("#"))	BDone = true;
-			for (Operation o : this.symbolicStates) {
-				if (!ADone && o.getLeft().equals(newO.getRightA())) {
-					newO.setRightA(o.getRight());
-					ADone = true;
-				}
-				if (!BDone && o.getLeft().equals(newO.getRightB())) {
-					newO.setRightB(o.getRight());
-					BDone = true;
-				}
-				if (ADone && BDone)
-					break;
+
+	public void updateSymbolicStates(Expression newEx) {
+		//1  v0 = v1
+		//2  v0 = v1 add v2
+		//3  v0 = sig $Finstance v1
+		//4  v0 = sig $Fstatic v1
+		//5  v0 = $return
+		Expression left = (Expression) newEx.getChildAt(0);
+		Expression right = (Expression) newEx.getChildAt(1);
+		int index = getIndexOfOperationWithLeft(left);
+		String op = right.getUserObject().toString();
+		if (op.equals("$return")) {
+			//5 v0 = $return
+			int assignIndex = getIndexOfOperationWithLeft("$return");
+			Expression assignEx = this.symbolicStates.get(assignIndex);
+			assignEx.remove(0);
+			assignEx.insert(left, 0);
+			ArrayList<Expression> toRemove = new ArrayList<Expression>();
+			for (int i = assignIndex+1; i < this.symbolicStates.size(); i++) {
+				Expression ex = this.symbolicStates.get(i);
+				Expression thisLeft = (Expression) ex.getChildAt(0);
+				if (ExpressionContains(thisLeft, "$return"))
+					thisLeft.replace(new Expression("$return"), left);
+				int thisIndex = getIndexOfOperationWithLeft(thisLeft);
+				if (thisIndex != i && thisIndex > -1)
+					toRemove.add(ex.clone());
 			}
 			if (index > -1) {
 				this.symbolicStates.remove(index);
 			}
-			this.symbolicStates.add(newO);
-		}
-		// scenario 2
-		else if (newO.getRightA().equals("$return")){
-			int assignOIndex = getIndexOfOperationWithLeft("$return");
-			Operation assignO = this.symbolicStates.get(assignOIndex);
-			assignO.setLeft(newO.getLeft());
-			if (!assignO.isNoOp())
-				for (int i = assignOIndex+1; i < this.symbolicStates.size(); i++) {
-					Operation o = this.symbolicStates.get(i);
-					if (o.getLeft().contains("$return")) {
-						o.setLeft(o.getLeft().replace("$return", assignO.getRightA()));
-					}
-				}
-			if (index > -1) {
-				this.symbolicStates.remove(index);
+			for (Expression ex : toRemove) {
+				Expression thisLeft = (Expression) ex.getChildAt(0);
+				int i = getIndexOfOperationWithLeft(thisLeft);
+				this.symbolicStates.remove(i);
 			}
 		}
-		// scenario 3 & 4
-		else{
-			if (newO.getRightA().startsWith("$Finstance")) {
-				String prefix = newO.getRightA().substring(0, newO.getRightA().lastIndexOf(">>")+2);
-				String objectName = newO.getRightA().substring(newO.getRightA().lastIndexOf(">>")+2);
-				for (Operation o : this.symbolicStates) {
-					if (o.getLeft().equals(objectName)) {
-						newO.setRightA(prefix + o.getRight());
-						break;
-					}
+		else if (right.getChildCount() == 0 || op.equals("$Fstatic")) {
+			//1&4 v0 = v1 or $Fstatic sig
+			// left = v0
+			// right = v1 or $Fstatic sig
+			if (!op.startsWith("#")) {
+				Expression updatedRight = this.findExistingExpression(right);
+				if (updatedRight != null) {
+					newEx.remove(1);
+					newEx.insert(updatedRight, 1);
 				}
 			}
 			if (index > -1)
 				this.symbolicStates.remove(index);
-			this.symbolicStates.add(newO);
+			this.symbolicStates.add(newEx);
+		}
+		else if (op.equals("$Finstance")) {
+			//3 v0 = sig $Finstance v1
+			Expression obj = (Expression) right.getChildAt(1);
+			Expression updatedObj = this.findExistingExpression(obj);
+			right.remove(1);
+			right.insert(updatedObj, 1);
+			if (index > -1)
+				this.symbolicStates.remove(index);
+			this.symbolicStates.add(newEx);
+		}
+		else {
+			//2 v0 = v1 add v2
+			// left = v0
+			// right = add v1 v2
+			for (int i = 0; i < right.getChildCount(); i++) {
+				Expression childOfRight = (Expression) right.getChildAt(i);
+				Expression updatedChild = this.findExistingExpression(childOfRight);
+				if (updatedChild != null) {
+					right.remove(i);
+					right.insert(updatedChild, i);
+				}
+			}
+			if (index > -1)
+				this.symbolicStates.remove(index);
+			this.symbolicStates.add(newEx);
 		}
 	}
+	
 	
 	public void mergeWithInvokedPS(PathSummary subPS) {
 		this.executionLog = subPS.getExecutionLog();
 		this.pathChoices = subPS.getPathChoices();
 		this.pathCondition = subPS.getPathCondition();
-		for (Operation o : subPS.getSymbolicStates()) {
-			if (o.getLeft().contains("$return"))
-				this.symbolicStates.add(o);
-			else if (o.getLeft().contains("$Fstatic")){
-				int index = getIndexOfOperationWithLeft(o.getLeft());
+		for (Expression ex : subPS.getSymbolicStates()) {
+			// to add:
+			// 1 $return = ... 
+			// 2 $Fstatic = ...
+			Expression left = (Expression) ex.getChildAt(0);
+			if (ExpressionContains(left, "$return")) {
+				this.symbolicStates.add(ex);
+			}
+			else if (ExpressionContains(left, "$Fstatic")) {
+				int index = this.getIndexOfOperationWithLeft(left);
 				if (index > -1)
 					this.symbolicStates.remove(index);
-				this.symbolicStates.add(o);
+				this.symbolicStates.add(ex);
 			}
 		}
 	}
 	
 	private int getIndexOfOperationWithLeft(String vName) {
 		for (int i = 0; i < this.symbolicStates.size(); i++) {
-			Operation o = this.symbolicStates.get(i);
-			if (o.getLeft().equals(vName))
+			Expression ex = this.symbolicStates.get(i);
+			Expression left = (Expression) ex.getChildAt(0);
+			if (left.getUserObject().toString().equals(vName))
 				return i;
 		}
 		return -1;
 	}
+	
+	private int getIndexOfOperationWithLeft(Expression left) {
+		for (int i = 0; i < this.symbolicStates.size(); i++) {
+			Expression ex = this.symbolicStates.get(i);
+			Expression thisLeft = (Expression) ex.getChildAt(0);
+			if (thisLeft.equals(left))
+				return i;
+		}
+		return -1;
+	}
+	
 
 	public String getMethodSignature() {
 		return methodSignature;
@@ -217,5 +233,50 @@ public class PathSummary implements Serializable{
 	public void setMethodSignature(String methodSignature) {
 		this.methodSignature = methodSignature;
 	}
+
+
 	
+	////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	
+
+	public Expression findExistingExpression(Expression leftToMatch) {
+		Expression result = null;
+		for (Expression ex : this.symbolicStates) {
+			if (!ex.getUserObject().toString().equals("="))
+				continue;
+			Expression left = (Expression) ex.getChildAt(0);
+			if (left.equals(leftToMatch)) {
+				result = ((Expression) ex.getChildAt(1)).clone();
+				break;
+			}
+		}
+		return result;
+	}
+	
+	private boolean ExpressionContains(Expression ex, String s) {
+		if (ex.getUserObject().toString().equals(s))
+			return true;
+		else {
+			for (int i = 0; i < ex.getChildCount(); i++) {
+				Expression child = (Expression) ex.getChildAt(i);
+				if (ExpressionContains(child, s))
+					return true;
+			}
+			return false;
+		}
+	}
+	
+	private boolean ExpressionContains(Expression ex, Expression containee) {
+		if (ex.equals(containee))
+			return true;
+		else {
+			for (int i = 0; i < ex.getChildCount(); i++) {
+				Expression child  = (Expression) ex.getChildAt(i);
+				if (ExpressionContains(child, containee))
+					return true;
+			}
+			return false;
+		}
+	}
 }
