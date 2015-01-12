@@ -4,8 +4,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import analysis.Expression;
 import smali.BlockLabel;
-import concolic.Expression;
 
 @SuppressWarnings("serial")
 public class StaticStmt implements Serializable{

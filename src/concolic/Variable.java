@@ -1,5 +1,7 @@
 package concolic;
 
+import analysis.Expression;
+
 
 public class Variable extends Expression{
 	private static final long serialVersionUID = 1L;

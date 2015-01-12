@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import analysis.Expression;
 import smali.stmt.ArrayStmt;
 import smali.stmt.CheckCastStmt;
 import smali.stmt.ConstStmt;
@@ -29,7 +30,6 @@ import staticFamily.StaticClass;
 import staticFamily.StaticField;
 import staticFamily.StaticMethod;
 import staticFamily.StaticStmt;
-import concolic.Expression;
 
 public class Parser {
 

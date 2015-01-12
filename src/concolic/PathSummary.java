@@ -3,6 +3,8 @@ package concolic;
 import java.io.Serializable;
 import java.util.ArrayList;
 
+import analysis.Expression;
+
 @SuppressWarnings("serial")
 public class PathSummary implements Serializable{
 

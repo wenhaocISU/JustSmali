@@ -1,10 +1,12 @@
-package concolic;
+package analysis;
  
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+
+import concolic.Variable;
  
 public class Expression extends DefaultMutableTreeNode{ // 
 	public static int availableId = 0;

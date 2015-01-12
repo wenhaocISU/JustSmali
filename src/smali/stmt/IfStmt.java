@@ -1,8 +1,8 @@
 package smali.stmt;
 
+import analysis.Expression;
 import staticFamily.StaticMethod;
 import staticFamily.StaticStmt;
-import concolic.Expression;
 
 @SuppressWarnings("serial")
 public class IfStmt extends StaticStmt{
