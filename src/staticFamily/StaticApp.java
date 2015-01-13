@@ -5,8 +5,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import concolic.PathSummary;
-
 @SuppressWarnings("serial")
 public class StaticApp implements Serializable{
 
@@ -93,21 +91,6 @@ public class StaticApp implements Serializable{
 		return result;
 	}
 
-	public ArrayList<PathSummary> getAllPathSummaries() {
-		ArrayList<PathSummary> result = new ArrayList<PathSummary>();
-		for (StaticClass c : this.classes)
-			for (StaticMethod m : c.getMethods())
-				result.addAll(m.getPathSummaries());
-		return result;
-	}
-	
-	public ArrayList<PathSummary> getPathSummariesOfMethod(String methodSig) {
-		return this.findMethod(methodSig).getPathSummaries();
-	}
-	
-	public ArrayList<PathSummary> getPathSummariesOfMethod(StaticMethod m) {
-		return m.getPathSummaries();
-	}
 
 	public String getSmaliAppPath() {
 		return outPath + "/" + apkFile.getName().substring(0, apkFile.getName().lastIndexOf(".apk")) + "_smali.apk";

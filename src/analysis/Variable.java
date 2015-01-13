@@ -1,6 +1,5 @@
-package concolic;
+package analysis;
 
-import analysis.Expression;
 
 
 public class Variable extends Expression{

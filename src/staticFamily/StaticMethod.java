@@ -5,11 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import smali.stmt.IfStmt;
-import smali.stmt.InvokeStmt;
-import smali.stmt.SwitchStmt;
-import concolic.PathSummary;
-
 @SuppressWarnings("serial")
 public class StaticMethod  implements Serializable{
 
@@ -36,9 +31,7 @@ public class StaticMethod  implements Serializable{
 	private ArrayList<String> fieldRefSigs = new ArrayList<String>();
 	
 	private Map<String, String> vDebugInfo = new HashMap<String, String>();
-	
-	private ArrayList<PathSummary> pathSummaries = new ArrayList<PathSummary>();
-	
+		
 	// Getters and Setters
 	public String getSmaliSignature() {
 		return smaliSignature;
@@ -247,14 +240,5 @@ public class StaticMethod  implements Serializable{
 		return null;
 	}
 
-	public ArrayList<PathSummary> getPathSummaries() {
-		return pathSummaries;
-	}
-
-	public void setPathSummaries(ArrayList<PathSummary> pathSummaries) {
-		this.pathSummaries = pathSummaries;
-	}
-
-	
 	
 }
