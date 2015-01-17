@@ -40,6 +40,7 @@ public class Parser {
 	private static BlockLabel label;
 	private static boolean normalLabelAlreadyUsed;
 	private static ArrayList<String> oldLines = new ArrayList<String>();
+	private static Instrumentation instr = new Instrumentation();
 	
 	public static void parseSmali(StaticApp theApp){
 		
@@ -156,6 +157,7 @@ public class Parser {
 						StaticStmt s = parseStmt(m, line);
 						s.setStmtID(stmtID++);
 						s.setTheStmt(line);
+						System.out.println("[stmt " + s.getStmtID() + "]" + s.getTheStmt());
 						s.setBlockLabel(label);
 						normalLabelAlreadyUsed = true;
 						if (originalLineNumber == -1) {
@@ -173,6 +175,13 @@ public class Parser {
 							s.setOriginalLineNumber(originalLineNumber);
 							originalLineNumber = -1;
 						}
+						if (s.getStmtID() == 0) {
+							classSmali = instr.addMethodStarting(classSmali, m.getSmaliSignature());
+						}
+						//TODO use two variables that are different from 
+						if (s instanceof ReturnStmt) {
+							
+						}
 						if (s instanceof SwitchStmt) {
 							String vName = ((SwitchStmt) s).getSwitchV();
 							classSmali = classSmali.substring(0, classSmali.length()-1);
@@ -186,43 +195,6 @@ public class Parser {
 							methodSmali += "\n    " + line + "\n";
 							m.setSmaliCode(methodSmali);
 						}
-						// check locals
-/*						if (s.generatesSymbol() && s instanceof FieldStmt && !((FieldStmt) s).isStatic()) {
-							String objectV = ((FieldStmt) s).getObject();
-							if (!s.getvDebugInfo().containsKey(objectV)) {
-								classSmali = classSmali.substring(0, classSmali.length()-1);
-								String methodSmali = m.getSmaliCode();
-								methodSmali = methodSmali.substring(0, methodSmali.length()-1);
-								classSmali = classSmali.substring(0, classSmali.lastIndexOf("\n")+1);
-								methodSmali = methodSmali.substring(0, methodSmali.lastIndexOf("\n")+1);
-								classSmali += "    .local " + objectV + ", wenhao" + objectV + ":" + ((FieldStmt)s).getFieldSig().split("->")[0];
-								methodSmali += "    .local " + objectV + ", wenhao" + objectV + ":" + ((FieldStmt)s).getFieldSig().split("->")[0];
-								classSmali += "\n    " + line + "\n";
-								methodSmali += "\n    " + line + "\n";
-								m.setSmaliCode(methodSmali);
-							}
-						}*/
-
-/*						if (stmtID > 1) {
-							StaticStmt lastS = m.getSmaliStmts().get(stmtID-2);
-							if (lastS.generatesSymbol() && lastS instanceof FieldStmt) {
-								if (!((FieldStmt)lastS).isStatic()) {
-									String objectV = lastS.getvB();
-									if (!s.getvDebugInfo().containsKey(objectV)) {
-										classSmali = classSmali.substring(0, classSmali.length()-1);
-										String methodSmali = m.getSmaliCode();
-										methodSmali = methodSmali.substring(0, methodSmali.length()-1);
-										classSmali = classSmali.substring(0, classSmali.lastIndexOf("\n")+1);
-										methodSmali = methodSmali.substring(0, methodSmali.lastIndexOf("\n")+1);
-										classSmali += "    .local " + objectV + ", wenhao" + objectV + ":" + ((FieldStmt)lastS).getFieldSig().split("->")[0];
-										methodSmali += "    .local " + objectV + ", wenhao" + objectV + ":" + ((FieldStmt)lastS).getFieldSig().split("->")[0];
-										classSmali += "\n    " + line + "\n";
-										methodSmali += "\n    " + line + "\n";
-										m.setSmaliCode(methodSmali);
-									}
-								}
-							}
-						}*/
 						m.addSourceLineNumber(s.getSourceLineNumber());
 						if (s instanceof IfStmt)
 							label.setNormalLabelSection(label.getNormalLabelSection()+1);
