@@ -20,11 +20,11 @@ public class Instrumentation {
 		
 		classSmali = left + all3Lines + "\n\n" + right;
 		
-		String localCount = classSmali.substring(classSmali.lastIndexOf(".locals "));
+		String localCount = classSmali.substring(classSmali.lastIndexOf(".locals ") + ".locals ".length());
 		localCount = localCount.substring(0, localCount.indexOf("\n"));
 		int theCount = Integer.parseInt(localCount);
 		if (theCount < 3) {
-			left = classSmali.substring(classSmali.lastIndexOf(".locals " + localCount));
+			left = classSmali.substring(0, classSmali.lastIndexOf(".locals "));
 			right = classSmali.substring(classSmali.lastIndexOf(left) + left.length());
 			right = right.replace(".locals " + theCount, ".locals 3");
 			classSmali = left + right;
