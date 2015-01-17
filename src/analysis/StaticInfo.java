@@ -21,7 +21,6 @@ import staticFamily.StaticApp;
 import staticFamily.StaticClass;
 import tools.Apktool;
 import tools.Others;
-import tools.Soot;
 
 public class StaticInfo {
 
@@ -52,11 +51,11 @@ public class StaticInfo {
 			Others.signAPK(staticApp);
 		}
 		
-		File instrumentedAPK_soot = new File(staticApp.getSootAppPath());
+/*		File instrumentedAPK_soot = new File(staticApp.getSootAppPath());
 		if (instrumentAPKs && (forceAllSteps || !instrumentedAPK_soot.exists())) {
 			Soot.InstrumentEveryMethod(staticApp);
 			Others.signAPK(staticApp);
-		}
+		}*/
 		
 		System.out.println("\nAnalysis Initialization Complete.\n");
 		return staticApp;

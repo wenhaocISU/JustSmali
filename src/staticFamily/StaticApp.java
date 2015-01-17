@@ -98,7 +98,8 @@ public class StaticApp implements Serializable{
 
 
 	public String getSootAppPath() {
-		return outPath + "/" + apkFile.getName().substring(0, apkFile.getName().lastIndexOf(".apk")) + "_soot.apk";
+		//return outPath + "/" + apkFile.getName().substring(0, apkFile.getName().lastIndexOf(".apk")) + "_soot.apk";
+		return getSmaliAppPath();
 	}
 
 	
