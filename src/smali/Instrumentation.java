@@ -13,8 +13,8 @@ public class Instrumentation {
 		String left = classSmali.substring(0, classSmali.lastIndexOf("\n\n")+2);
 		String right = classSmali.substring(classSmali.lastIndexOf("\n\n")+2);
 		
-		if (right.contains("    .prologue")) {
-			right.replace("    .prologue", "");
+		if (right.contains("    .prologue\n")) {
+			right = right.replace("    .prologue\n", "");
 			all3Lines = "    .prologue\n" + all3Lines;
 		}
 		
