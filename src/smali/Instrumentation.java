@@ -9,8 +9,15 @@ public class Instrumentation {
 		
 		String line2 = line2head + "\"METHOD_STARTING," + methodSig + "\"";
 	    String all3Lines = line1 + "\n" + line2 + "\n" + line3;
+	    
 		String left = classSmali.substring(0, classSmali.lastIndexOf("\n\n")+2);
 		String right = classSmali.substring(classSmali.lastIndexOf("\n\n")+2);
+		
+		if (right.contains("    .prologue")) {
+			right.replace("    .prologue", "");
+			all3Lines = "    .prologue\n" + all3Lines;
+		}
+		
 		classSmali = left + all3Lines + "\n\n" + right;
 		
 		return classSmali;
