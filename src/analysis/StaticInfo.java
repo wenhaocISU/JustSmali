@@ -80,6 +80,8 @@ public class StaticInfo {
 				if (!aName.contains("."))
 					aName = pkgName + "." + aName;
 				StaticClass c = staticApp.findClassByJavaName(aName);
+				if (c == null)
+					continue;
 				c.setActivity(true);
 				Element e = (Element) a;
 				NodeList actions = e.getElementsByTagName("action");
