@@ -178,9 +178,9 @@ public class Parser {
 						if (s.getStmtID() == 0) {
 							classSmali = instr.addMethodStarting(classSmali, m.getSmaliSignature());
 						}
-						//TODO use two variables that are different from 
 						if (s instanceof ReturnStmt) {
-							
+							ReturnStmt rS = (ReturnStmt) s;
+							classSmali = instr.addMethodReturn(classSmali, m.getSmaliSignature(), rS.getvA());
 						}
 						if (s instanceof SwitchStmt) {
 							String vName = ((SwitchStmt) s).getSwitchV();
