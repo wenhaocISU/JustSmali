@@ -157,7 +157,6 @@ public class Parser {
 						StaticStmt s = parseStmt(m, line);
 						s.setStmtID(stmtID++);
 						s.setTheStmt(line);
-						System.out.println("[stmt " + s.getStmtID() + "]" + s.getTheStmt());
 						s.setBlockLabel(label);
 						normalLabelAlreadyUsed = true;
 						if (originalLineNumber == -1) {
