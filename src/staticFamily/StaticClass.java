@@ -182,11 +182,22 @@ public class StaticClass  implements Serializable{
 				return m;
 		return null;
 	}
+	
 	public ArrayList<String> getOldLines() {
 		return oldLines;
 	}
+	
 	public void setOldLines(ArrayList<String> oldLines) {
 		this.oldLines = oldLines;
 	}
+	
+	public StaticStmt getStmtByLineNumber(int line) {
+		for (StaticMethod m : this.methods)
+			for (StaticStmt s : m.getSmaliStmts())
+				if (s.getSourceLineNumber() == line)
+					return s;
+		return null;
+	}
+
 	
 }
