@@ -44,9 +44,10 @@ public class StaticInfo {
 			loadStaticApp();
 		}
 		
+		File keyStore = new File(Paths.keystorePath);
 		File instrumentedAPK_smali = new File(staticApp.getSmaliAppPath());
 		
-		if (instrumentAPKs && (forceAllSteps || !instrumentedAPK_smali.exists())) {
+		if (keyStore.exists() && instrumentAPKs && (forceAllSteps || !instrumentedAPK_smali.exists())) {
 			Apktool.recompileAPK(staticApp);
 			Others.signAPK(staticApp);
 		}
