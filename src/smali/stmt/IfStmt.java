@@ -8,6 +8,8 @@ import staticFamily.StaticStmt;
 public class IfStmt extends StaticStmt{
 
 	private boolean has1V, has2V;
+	private boolean followingCMPStmt;
+	private String CMPStmtLeft, CMPStmtRight;
 
 	public String getTargetLabel() {
 		if (has1V)
@@ -37,10 +39,16 @@ public class IfStmt extends StaticStmt{
 	}
 	
 	public Expression getJumpCondition() {
+
 		String op = getTheStmt().split(" ")[0].split("-")[1];
 		String newOp = "";
 		String left = getvA();
 		String right = getvB();
+		if (this.followingCMPStmt) {
+			left = this.CMPStmtLeft;
+			right = this.CMPStmtRight;
+			op = op.replace("z", "");
+		}
 		if (op.equals("eq"))			newOp = "==";
 		else if (op.equals("ne"))		newOp = "!=";
 		else if (op.equals("lt"))		newOp = "<";
@@ -68,6 +76,36 @@ public class IfStmt extends StaticStmt{
 		if (stmtID == -1)
 			return -1;
 		return m.getSmaliStmts().get(stmtID+1).getSourceLineNumber();
+	}
+
+
+	public boolean followingCMPStmt() {
+		return followingCMPStmt;
+	}
+
+
+	public void setFollowingCMPStmt(boolean followingCMPStmt) {
+		this.followingCMPStmt = followingCMPStmt;
+	}
+
+
+	public String getCMPStmtLeft() {
+		return CMPStmtLeft;
+	}
+
+
+	public void setCMPStmtLeft(String cMPStmtLeft) {
+		CMPStmtLeft = cMPStmtLeft;
+	}
+
+
+	public String getCMPStmtRight() {
+		return CMPStmtRight;
+	}
+
+
+	public void setCMPStmtRight(String cMPStmtRight) {
+		CMPStmtRight = cMPStmtRight;
 	}
 	
 }

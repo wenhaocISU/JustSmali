@@ -179,7 +179,6 @@ public class Parser {
 						}
 						if (s instanceof ReturnStmt) {
 							ReturnStmt rS = (ReturnStmt) s;
-							//if (!mms.contains(m.getSmaliSignature()))
 							classSmali = instr.addMethodReturn(classSmali, m.getSmaliSignature(), rS);
 						}
 						if (s instanceof SwitchStmt) {
@@ -316,6 +315,14 @@ public class Parser {
 				s.setvC(arguments[2]);
 			s.setFlowsThrough(false);
 			s.setUpdatesPathCondition(true);
+			if (m.getSmaliStmts().size() > 0) {
+				StaticStmt lastS = m.getSmaliStmts().get(m.getSmaliStmts().size()-1);
+				if (lastS instanceof V3OPStmt && lastS.getTheStmt().startsWith("cmp")) {
+					s.setFollowingCMPStmt(true);
+					s.setCMPStmtLeft(lastS.getvB());
+					s.setCMPStmtRight(lastS.getvC());
+				}
+			}
 			return s;
 		}
 		if (StmtFormat.isInvoke(line)) {
