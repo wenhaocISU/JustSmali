@@ -248,6 +248,7 @@ public class Parser {
 			s.setvB(arguments[1]);			
 			String left = s.getV();
 			String right = "#" + s.getValue();
+			// TODO make #... as the root, and put the value to its child
 			if (line.startsWith("const-string"))
 				right = "#string>>" + s.getValue();
 			if (line.startsWith("const-class"))
@@ -385,6 +386,7 @@ public class Parser {
 				String[] arguments = line.substring(line.indexOf(" ")+1).split(", ");
 				Expression ex = new Expression("=");
 				ex.add(new Expression(arguments[0]));
+				//TODO make $new as the root, and type as its single child
 				ex.add(new Expression("$new>>" + arguments[1]));
 				s.setExpression(ex);
 			}
