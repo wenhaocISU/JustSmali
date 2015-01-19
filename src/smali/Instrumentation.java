@@ -64,7 +64,7 @@ public class Instrumentation {
 		// change .locals
 		left = classSmali.substring(0, classSmali.lastIndexOf(".locals "));
 		right = classSmali.substring(classSmali.lastIndexOf(left) + left.length());
-		right = right.replace(".locals " + theCount, ".locals " + theCount+2);
+		right = right.replace(".locals " + theCount, ".locals " + (theCount+2));
 		classSmali = left + right;
 		
 		return classSmali;
