@@ -66,7 +66,6 @@ public class Expression extends DefaultMutableTreeNode{
 				varSet.addAll(quiry);
 			} 
 		}
-		
 		return varSet;
 	}
 	
