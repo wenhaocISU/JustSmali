@@ -48,7 +48,7 @@ public class Apktool {
 			BufferedReader in_err = new BufferedReader(new InputStreamReader(pc.getErrorStream()));
 			ArrayList<String> missingNames = new ArrayList<String>();
 			while ((line = in_err.readLine())!=null) {
-				System.out.println("[apktool]" + line);
+				//System.out.println("[apktool]" + line);
 				if (line.contains("Building apk file...")) {
 					inputStreamGood = true;
 					System.out.print("Done.\n");

@@ -62,6 +62,7 @@ public class Instrumentation {
 				found = true;
 				outVNo = i;
 				stringVNo = i+1;
+				break;
 			}
 		}
 
@@ -90,7 +91,7 @@ public class Instrumentation {
 		if (stringVNo >= theCount) {
 			left = classSmali.substring(0, classSmali.lastIndexOf(".locals "));
 			right = classSmali.substring(classSmali.lastIndexOf(left) + left.length());
-			right = right.replace(".locals " + theCount, ".locals " + stringVNo + 1);
+			right = right.replace(".locals " + theCount, ".locals " + (stringVNo+1));
 			classSmali = left + right;
 		}
 		
