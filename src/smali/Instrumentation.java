@@ -37,17 +37,13 @@ public class Instrumentation {
 	public String addMethodReturn(String classSmali, String methodSig, String returnVName) {
 		
 		// if method return v0 type is double, then v0 will occupy v0 and v1. therefore, can't just simply use v1 and v2 here.
+		String localCount = classSmali.substring(classSmali.lastIndexOf(".locals ") + ".locals ".length());
+		localCount = localCount.substring(0, localCount.indexOf("\n"));
+		int theCount = Integer.parseInt(localCount);
 		
-		int outVNo = 1;
-		int stringVNo = 2;
-		int returnVNo = 0;
-		
-		if (returnVName.startsWith("v"))
-			returnVNo = Integer.parseInt(returnVName.replace("v", ""));
-		if (returnVNo == 1)
-			outVNo = 0;
-		else if (returnVNo == 2)
-			stringVNo = 0;
+		// add 2 more to theCount
+		int outVNo = theCount;
+		int stringVNo = outVNo + 1;
 		
 		String outPrintV = "v" + outVNo;
 		String stringV = "v" + stringVNo;
@@ -65,6 +61,12 @@ public class Instrumentation {
 		
 		classSmali = left + all3Lines + "\n\n" + right;
 	    
+		// change .locals
+		left = classSmali.substring(0, classSmali.lastIndexOf(".locals "));
+		right = classSmali.substring(classSmali.lastIndexOf(left) + left.length());
+		right = right.replace(".locals " + theCount, ".locals " + theCount+2);
+		classSmali = left + right;
+		
 		return classSmali;
 	}
 	
