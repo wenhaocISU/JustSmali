@@ -36,6 +36,8 @@ public class Instrumentation {
 	
 	public String addMethodReturn(String classSmali, String methodSig, String returnVName) {
 		
+		// if method return v0 type is double, then v0 will occupy v0 and v1. therefore, can't just simply use v1 and v2 here.
+		
 		int outVNo = 1;
 		int stringVNo = 2;
 		int returnVNo = 0;

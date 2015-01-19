@@ -177,9 +177,44 @@ public class Parser {
 						if (s.getStmtID() == 0) {
 							classSmali = instr.addMethodStarting(classSmali, m.getSmaliSignature());
 						}
+						ArrayList<String> mms = new ArrayList<String>(Arrays.asList(
+								/*
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;-><init>()V",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->appendNumberToBillAmount(Ljava/lang/String;)V",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->calculateTip()V",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->calculateTip(D)V",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->calculateTip(DD)V",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->clearBillAmount()V",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getBillAmount()Ljava/lang/String;",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getNumberOfPeople()I",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getSplitAdjustment()Ljava/lang/String;",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getSplitBillAmount()Ljava/lang/String;",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getSplitTaxAmount()Ljava/lang/String;",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getSplitTipAmount()Ljava/lang/String;",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getSplitTotalAmount()Ljava/lang/String;",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getTaxAmount()Ljava/lang/String;",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getTaxPercentage()Ljava/lang/String;",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getTipAmount()Ljava/lang/String;",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getTipPercentage()Ljava/lang/String;",
+								*/
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getTipPercentageAsDouble()D"
+								/*
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getTipPercentageRounded()I",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getTotalAmount()Ljava/lang/String;",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->refreshBillAmount()V",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->removeEndNumberFromBillAmount()V",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->roundDown(Z)V",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->roundUp(Z)V",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->setTaxPercentage(D)V",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->setTipPercentage(D)V",
+								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->splitBill(I)V"
+								*/
+								
+						));
 						if (s instanceof ReturnStmt) {
 							ReturnStmt rS = (ReturnStmt) s;
-							classSmali = instr.addMethodReturn(classSmali, m.getSmaliSignature(), rS.getvA());
+							if (!mms.contains(m.getSmaliSignature()))
+								classSmali = instr.addMethodReturn(classSmali, m.getSmaliSignature(), rS.getvA());
 						}
 						if (s instanceof SwitchStmt) {
 							String vName = ((SwitchStmt) s).getSwitchV();
