@@ -177,13 +177,10 @@ public class Parser {
 						if (s.getStmtID() == 0) {
 							classSmali = instr.addMethodStarting(classSmali, m.getSmaliSignature());
 						}
-/*						ArrayList<String> mms = new ArrayList<String>(Arrays.asList(
-								"Lnet/mandaria/tippytipperlibrary/services/TipCalculatorService;->getTipPercentageAsDouble()D"
-						));*/
 						if (s instanceof ReturnStmt) {
 							ReturnStmt rS = (ReturnStmt) s;
 							//if (!mms.contains(m.getSmaliSignature()))
-							classSmali = instr.addMethodReturn(classSmali, m.getSmaliSignature(), rS.getvA());
+							classSmali = instr.addMethodReturn(classSmali, m.getSmaliSignature(), rS);
 						}
 						if (s instanceof SwitchStmt) {
 							String vName = ((SwitchStmt) s).getSwitchV();
