@@ -103,4 +103,22 @@ public class StaticApp implements Serializable{
 	}
 
 	
+	public int getClassCount() {
+		return this.classes.size();
+	}
+	
+	public int getMethodCount() {
+		int result = 0;
+		for (StaticClass c : this.classes)
+			result += c.getMethodCount();
+		return result;
+	}
+	
+	public int getFieldCount() {
+		int result = 0;
+		for (StaticClass c : this.classes)
+			result += c.getFieldCount();
+		return result;
+	}
+	
 }

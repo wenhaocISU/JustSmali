@@ -198,6 +198,13 @@ public class StaticClass  implements Serializable{
 					return s;
 		return null;
 	}
+	
+	public int getMethodCount() {
+		return this.methods.size();
+	}
 
+	public int getFieldCount() {
+		return this.fields.size();
+	}
 	
 }
