@@ -11,11 +11,13 @@ public class StaticField  implements Serializable{
 	private String dexSubSig;
 	private String type;
 	private String initValue = "";
+	private String declaration = "";
 	
 	private String declaringClassName;
 	
 	private boolean isPublic, isPrivate, isProtected, isFinal;
 	private boolean isInherited;
+	private boolean isSynthetic;
 	
 	private ArrayList<String> inCallSourceSigs = new ArrayList<String>();
 
@@ -125,6 +127,26 @@ public class StaticField  implements Serializable{
 
 	public String getDexSignature() {
 		return declaringClassName + "->" + dexSubSig;
+	}
+
+
+	public boolean isSynthetic() {
+		return isSynthetic;
+	}
+
+
+	public void setIsSynthetic(boolean isSynthetic) {
+		this.isSynthetic = isSynthetic;
+	}
+
+
+	public String getDeclaration() {
+		return declaration;
+	}
+
+
+	public void setDeclaration(String declaration) {
+		this.declaration = declaration;
 	}
 
 

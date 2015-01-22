@@ -275,8 +275,9 @@ public class Parser {
 			String tgtCN = fieldSig.split("->")[0];
 			String fSubSig = fieldSig.split("->")[1];
 			StaticClass tgtC = staticApp.findClassByDexName(tgtCN);
+			StaticField tgtF = null;
 			if (tgtC != null) {
-				StaticField tgtF = tgtC.getField(fSubSig.split(":")[0]);
+				tgtF = tgtC.getField(fSubSig.split(":")[0]);
 				if (tgtF == null){
 					tgtF = new StaticField();
 					tgtF.setDexSubSig(fSubSig);
@@ -285,6 +286,7 @@ public class Parser {
 				tgtF.addInCallSourceSig(m.getSmaliSignature());
 				m.addFieldRefSigs(tgtF.getDexSignature());
 			}
+			
 			String fieldOp = "$Finstance";
 			if (s.isStatic()) fieldOp = "$Fstatic";
 			Expression fieldExpr = new Expression(fieldOp);
@@ -295,6 +297,17 @@ public class Parser {
 			Expression ex = new Expression("=");
 			if (s.isPut()) {  ex.add(fieldExpr); ex.add(vExpr);}
 			else 			{ ex.add(vExpr);	 ex.add(fieldExpr);}
+			
+			if (s.isGet() && tgtF != null && tgtF.isSynthetic() && tgtF.getName().startsWith("this$")) {
+				Expression newRight = new Expression("$this");
+				newRight.add(new Expression(tgtF.getType()));
+				ex.remove(1);
+				ex.insert(newRight, 1);
+				System.out.println("[getFieldStmt]" + line);
+				System.out.println("[StaticField]" + tgtF.getDeclaration());
+				System.out.println("[newExpression]" + ex.toYicesStatement());
+			}
+			
 			s.setExpression(ex);
 			return s;
 		}
@@ -724,8 +737,10 @@ public class Parser {
 			if (line.contains(" protected "))	f.setProtected(true);
 			if (line.contains(" final ")) 		f.setFinal(true);
 			if (line.contains(" static "))	 	f.setStatic(true);
+			if (line.contains(" synthetic "))	f.setIsSynthetic(true);
 			f.setInitValue(initValue);
 			f.setType(Grammar.dexToJavaTypeName(dexType));
+			f.setDeclaration(line);
 			c.addField(f);
 		}
 	}
