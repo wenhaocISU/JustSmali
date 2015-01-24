@@ -400,7 +400,9 @@ public class Parser {
 				Expression ex = new Expression("=");
 				ex.add(new Expression(arguments[0]));
 				//TODO make $new as the root, and type as its single child
-				ex.add(new Expression("$new>>" + arguments[1]));
+				Expression right = new Expression("$new");
+				right.add(new Expression(arguments[1]));
+				ex.add(right);
 				s.setExpression(ex);
 			}
 			return s;
