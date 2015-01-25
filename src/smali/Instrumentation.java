@@ -1,11 +1,33 @@
 package smali;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import smali.stmt.ReturnStmt;
 
 public class Instrumentation {
 
+	
+	private ArrayList<String> classBlackList = new ArrayList<String>(Arrays.asList(
+			"Landroid/support/v4/*",
+			"Landroid/support/v7/*",
+			"Landroid/support/annotation/*"
+	));
+	
+	public boolean classInBlackList(String className) {
+		for (String c : classBlackList) {
+			if (c.endsWith("*")) {
+				if (className.startsWith(c.substring(0, c.lastIndexOf("*"))))
+					return true;
+			}
+			else if (c.endsWith(";")) {
+				if (className.equals(c))
+					return true;
+			}
+		}
+		return false;
+	}
+	
 	
 	public String addMethodStarting(String classSmali, String methodSig) {
 		

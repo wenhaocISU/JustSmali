@@ -174,12 +174,13 @@ public class Parser {
 							s.setOriginalLineNumber(originalLineNumber);
 							originalLineNumber = -1;
 						}
-						if (s.getStmtID() == 0) {
-							classSmali = instr.addMethodStarting(classSmali, m.getSmaliSignature());
-						}
-						if (s instanceof ReturnStmt) {
-							ReturnStmt rS = (ReturnStmt) s;
-							classSmali = instr.addMethodReturn(classSmali, m.getSmaliSignature(), rS);
+						if (!instr.classInBlackList(c.getDexName())) {
+							if (s.getStmtID() == 0)
+								classSmali = instr.addMethodStarting(classSmali, m.getSmaliSignature());
+							if (s instanceof ReturnStmt) {
+								ReturnStmt rS = (ReturnStmt) s;
+								classSmali = instr.addMethodReturn(classSmali, m.getSmaliSignature(), rS);
+							}
 						}
 						if (s instanceof SwitchStmt) {
 							String vName = ((SwitchStmt) s).getSwitchV();

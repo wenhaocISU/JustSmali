@@ -34,7 +34,7 @@ public class Apktool {
 	
 	public static void recompileAPK(StaticApp testApp) {
 		try {
-			System.out.print("\nRecompiling smali into APK...  ");
+			//System.out.print("\nRecompiling smali into APK...  ");
 			String outAppName = testApp.getApkFile().getName();
 			outAppName = outAppName.substring(0, outAppName.lastIndexOf(".apk"));
 			outAppName = outAppName + "_smali_unsigned.apk";
@@ -48,7 +48,7 @@ public class Apktool {
 			BufferedReader in_err = new BufferedReader(new InputStreamReader(pc.getErrorStream()));
 			ArrayList<String> missingNames = new ArrayList<String>();
 			while ((line = in_err.readLine())!=null) {
-				//System.out.println("[apktool]" + line);
+				System.out.println("[apktool]" + line);
 				if (line.contains("Building apk file...")) {
 					inputStreamGood = true;
 					System.out.print("Done.\n");
