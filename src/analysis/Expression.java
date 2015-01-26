@@ -120,6 +120,35 @@ public class Expression extends DefaultMutableTreeNode{
 		return false;
 	}
 	
+	public boolean isEquivalentTo(Expression ex) {
+		Expression xe = new Expression(ex.getUserObject().toString());
+		xe.add(((Expression) ex.getChildAt(1)).clone());
+		xe.add(((Expression) ex.getChildAt(0)).clone());
+		return (equals(ex) || equals(xe));
+	}
+	
+	public boolean isOppsiteTo(Expression ex) {
+		Expression xe = ex.getReverseCondition();
+		return isEquivalentTo(xe);
+	}
+	
+	private Expression getReverseCondition() {
+		String op = this.getUserObject().toString();
+		if (op.equals("=="))		op = "!=";
+		else if (op.equals("!="))	op = "==";
+		else if (op.equals("<"))	op = ">=";
+		else if (op.equals("<="))	op = ">";
+		else if (op.equals(">"))	op = "<=";
+		else if (op.equals(">="))	op = "<";
+		else return null;
+		Expression result = new Expression(op);
+		for (int i = 0; i < this.getChildCount(); i++) {
+			Expression child = (Expression) this.getChildAt(i);
+			result.add(child.clone());
+		}
+		return result;
+	}
+	
 	public static Set<Variable> getUnqiueVarSet(Collection<? extends Expression> inputs){
 		Set<Variable> result = new HashSet<Variable>();
 		for(Expression expre : inputs){
@@ -135,6 +164,7 @@ public class Expression extends DefaultMutableTreeNode{
 		}
 		return result;
 	}
+	
 	
 	public static String createAssertion(String yices){
 		return "(assert "+yices+")";
