@@ -132,7 +132,33 @@ public class Expression extends DefaultMutableTreeNode{
 		return isEquivalentTo(xe);
 	}
 	
-	private Expression getReverseCondition() {
+	public boolean contains(Expression containee) {
+		if (this.equals(containee))
+			return true;
+		else {
+			for (int i = 0; i < this.getChildCount(); i++) {
+				Expression child  = (Expression) this.getChildAt(i);
+				if (child.contains(containee))
+					return true;
+			}
+			return false;
+		}
+	}
+	
+	public boolean contains(String s) {
+		if (this.getUserObject().toString().equals(s))
+			return true;
+		else {
+			for (int i = 0; i < this.getChildCount(); i++) {
+				Expression child = (Expression) this.getChildAt(i);
+				if (child.contains(s))
+					return true;
+			}
+			return false;
+		}
+	}
+	
+	public Expression getReverseCondition() {
 		String op = this.getUserObject().toString();
 		if (op.equals("=="))		op = "!=";
 		else if (op.equals("!="))	op = "==";
@@ -147,6 +173,24 @@ public class Expression extends DefaultMutableTreeNode{
 			result.add(child.clone());
 		}
 		return result;
+	}
+	
+	public void toDecimal() {
+		for (int i = 0; i < getChildCount(); i++) {
+			Expression child = (Expression) getChildAt(i);
+			if (child.getUserObject().toString().equals("#number")) {
+				Expression theNumber = (Expression) child.getChildAt(0);
+				String hex = theNumber.getUserObject().toString().replace("0x", "");
+				int decimal = Integer.parseInt(hex, 16);
+				remove(i);
+				insert(new Expression(decimal + ""), i);
+			}
+			else child.toYiceFormat();
+		}
+	}
+	
+	public void toYiceFormat() {
+		toDecimal();
 	}
 	
 	public static Set<Variable> getUnqiueVarSet(Collection<? extends Expression> inputs){

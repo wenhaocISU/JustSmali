@@ -248,15 +248,16 @@ public class Parser {
 			s.setvA(arguments[0]);
 			s.setvB(arguments[1]);			
 			String left = s.getV();
-			String right = "#" + s.getValue();
 			// TODO make #... as the root, and put the value to its child
+			Expression right = new Expression("#number");
 			if (line.startsWith("const-string"))
-				right = "#string>>" + s.getValue();
+				right = new Expression("#string");
 			if (line.startsWith("const-class"))
-				right = "#class>>" + s.getValue();
+				right = new Expression("#class");
+			right.add(new Expression(s.getValue()));
 			Expression ex = new Expression("=");
 			ex.add(new Expression(left));
-			ex.add(new Expression(right));
+			ex.add(right);
 			s.setExpression(ex);
 			return s;
 		}
@@ -304,9 +305,6 @@ public class Parser {
 				newRight.add(new Expression(tgtF.getType()));
 				ex.remove(1);
 				ex.insert(newRight, 1);
-				System.out.println("[getFieldStmt]" + line);
-				System.out.println("[StaticField]" + tgtF.getDeclaration());
-				System.out.println("[newExpression]" + ex.toYicesStatement());
 			}
 			
 			s.setExpression(ex);

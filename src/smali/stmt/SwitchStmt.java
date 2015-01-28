@@ -74,18 +74,22 @@ public class SwitchStmt extends StaticStmt{
 	public Expression getSwitchCondition(int value) {
 		if (!this.switchMap.containsKey(value))
 			return null;
-		Expression result = new Expression("==");
+		Expression result = new Expression("=");
 		result.add(new Expression(getSwitchV()));
-		result.add(new Expression("#" + value));
+		Expression theNumber = new Expression("#number");
+		theNumber.add(new Expression(value + ""));
+		result.add(theNumber);
 		return result;
 	}
 	
 	public ArrayList<Expression> getFlowThroughConditions() {
 		ArrayList<Expression> result = new ArrayList<Expression>();
 		for (int value : this.switchMap.keySet()) {
-			Expression cond = new Expression("!=");
+			Expression cond = new Expression("/=");
 			cond.add(new Expression(getSwitchV()));
-			cond.add(new Expression("#" + value));
+			Expression theNumber = new Expression("#number");
+			theNumber.add(new Expression(value + ""));
+			cond.add(theNumber);
 			result.add(cond);
 		}
 		return result;

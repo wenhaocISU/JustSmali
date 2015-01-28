@@ -49,18 +49,18 @@ public class IfStmt extends StaticStmt{
 			right = this.CMPStmtRight;
 			op = op.replace("z", "");
 		}
-		if (op.equals("eq"))			newOp = "==";
-		else if (op.equals("ne"))		newOp = "!=";
+		if (op.equals("eq"))			newOp = "=";
+		else if (op.equals("ne"))		newOp = "/=";
 		else if (op.equals("lt"))		newOp = "<";
 		else if (op.equals("ge"))		newOp = ">=";
 		else if (op.equals("gt"))		newOp = ">";
 		else if (op.equals("le"))		newOp = "<=";
-		else if (op.equals("eqz"))		{ newOp = "==";  right = "#0"; }
-		else if (op.equals("nez"))		{ newOp = "!="; right = "#0"; }
-		else if (op.equals("ltz"))		{ newOp = "<";  right = "#0"; }
-		else if (op.equals("gez"))		{ newOp = ">="; right = "#0"; }
-		else if (op.equals("gtz"))		{ newOp = ">";  right = "#0"; }
-		else if (op.equals("lez"))		{ newOp = "<="; right = "#0"; }
+		else if (op.equals("eqz"))		{ newOp = "=";  right = "0"; }
+		else if (op.equals("nez"))		{ newOp = "/="; right = "0"; }
+		else if (op.equals("ltz"))		{ newOp = "<";  right = "0"; }
+		else if (op.equals("gez"))		{ newOp = ">="; right = "0"; }
+		else if (op.equals("gtz"))		{ newOp = ">";  right = "0"; }
+		else if (op.equals("lez"))		{ newOp = "<="; right = "0"; }
 		Expression result = new Expression(newOp);
 		result.add(new Expression(left));
 		result.add(new Expression(right));
