@@ -52,12 +52,6 @@ public class StaticInfo {
 			Others.signAPK(staticApp);
 		}
 		
-/*		File instrumentedAPK_soot = new File(staticApp.getSootAppPath());
-		if (instrumentAPKs && (forceAllSteps || !instrumentedAPK_soot.exists())) {
-			Soot.InstrumentEveryMethod(staticApp);
-			Others.signAPK(staticApp);
-		}*/
-		
 		System.out.println("\nAnalysis Initialization Complete.\n");
 		return staticApp;
 	}

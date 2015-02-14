@@ -1,6 +1,8 @@
 package tools;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 
 import main.Paths;
@@ -16,13 +18,20 @@ public class Others {
 			File newF = new File(testApp.outPath + "/" + newFName);
 			if (newF.exists())	newF.delete();
 			try {
-				Thread.sleep(2000);
+				Thread.sleep(500);
 				String keystoreName = Paths.keystorePath.substring(Paths.keystorePath.lastIndexOf("/")+1);
 				Process pc = Runtime.getRuntime().exec(
 						"jarsigner -keystore " + Paths.keystorePath + 
 						" -signedjar " + newF.getAbsolutePath() + 
 						" " + f.getAbsolutePath() +
 						" " + keystoreName);
+				BufferedReader in_err = new BufferedReader(new InputStreamReader(pc.getErrorStream()));
+				BufferedReader in = new BufferedReader(new InputStreamReader(pc.getInputStream()));
+				String line;
+//				while ((line = in.readLine())!=null)
+//					System.out.println("[jarsignerIN]" + line);
+//				while ((line = in_err.readLine())!=null)
+//					System.out.println("[jarsignerERR]" + line);
 				OutputStream out = pc.getOutputStream();
 				out.write((Paths.keystoreKey + "\n").getBytes());
 				out.flush();

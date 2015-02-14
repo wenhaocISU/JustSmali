@@ -18,7 +18,10 @@ public class Apktool {
 			File app = testApp.getApkFile();
 			System.out.println("\n-- apktool starting, target file: '"+ app.getAbsolutePath() + "'");
 			String outDir = testApp.outPath + "/apktool";
-			Process pc = Runtime.getRuntime().exec("java -jar " + Paths.apktoolPath + " d -f " + app.getAbsolutePath() + " " + outDir);
+			String command = "java -jar " + Paths.apktoolPath + " d -f " + app.getAbsolutePath() + " " + outDir;
+			if (Paths.apktoolPath.contains("2.0.0rc"))
+				command = "java -jar " + Paths.apktoolPath + " d -f -o " + outDir + " " + app.getAbsolutePath();
+			Process pc = Runtime.getRuntime().exec(command);
 			BufferedReader in = new BufferedReader(new InputStreamReader(pc.getInputStream()));
 			BufferedReader in_err = new BufferedReader(new InputStreamReader(pc.getErrorStream()));
 			String line;
@@ -34,21 +37,27 @@ public class Apktool {
 	
 	public static void recompileAPK(StaticApp testApp) {
 		try {
-			//System.out.print("\nRecompiling smali into APK...  ");
+			System.out.print("\nRecompiling smali into APK...  ");
 			String outAppName = testApp.getApkFile().getName();
 			outAppName = outAppName.substring(0, outAppName.lastIndexOf(".apk"));
 			outAppName = outAppName + "_smali_unsigned.apk";
-			Process pc = Runtime.getRuntime().exec(
-					"java -jar " + Paths.apktoolPath + " b -f "
-					+ "-a " + Paths.aaptPath
+			String command = "java -jar " + Paths.apktoolPath + " b -f"
+					+ " -a " + Paths.aaptPath
 					+ " " + testApp.outPath + "/apktool/"
-					+ " " + testApp.outPath + "/" + outAppName);
+					+ " " + testApp.outPath + "/" + outAppName;
+			if (Paths.apktoolPath.contains("2.0.0rc"))
+				command = "java -jar " + Paths.apktoolPath + " b -f"
+						+ " -a " + Paths.aaptPath
+						+ " -o " + testApp.outPath + "/" + outAppName
+						+ " " + testApp.outPath + "/apktool/";
+			Process pc = Runtime.getRuntime().exec(command);
 			String line;
 			boolean inputStreamGood = false;
 			BufferedReader in_err = new BufferedReader(new InputStreamReader(pc.getErrorStream()));
+			BufferedReader in = new BufferedReader(new InputStreamReader(pc.getInputStream()));
 			ArrayList<String> missingNames = new ArrayList<String>();
 			while ((line = in_err.readLine())!=null) {
-				//System.out.println("[apktool]" + line);
+				//System.out.println("[apktoolERR]" + line);
 				if (line.contains("Building apk file...")) {
 					inputStreamGood = true;
 					System.out.print("Done.\n");
@@ -59,6 +68,8 @@ public class Apktool {
 						missingNames.add(missingName);
 				}
 			}
+			while ((line = in.readLine())!=null)
+				//System.out.println("[apktoolIN]" + line);
 			if (!inputStreamGood && missingNames.size() > 0) {
 				System.out.print("Need to fix the styles.xml and redo..\n");
 				String toWrite = "";

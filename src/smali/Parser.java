@@ -184,16 +184,19 @@ public class Parser {
 						}
 						if (s instanceof SwitchStmt) {
 							String vName = ((SwitchStmt) s).getSwitchV();
-							classSmali = classSmali.substring(0, classSmali.length()-1);
-							String methodSmali = m.getSmaliCode();
-							methodSmali = methodSmali.substring(0, methodSmali.length()-1);
-							classSmali = classSmali.substring(0, classSmali.lastIndexOf("\n")+1);
-							methodSmali = methodSmali.substring(0, methodSmali.lastIndexOf("\n")+1);
-							classSmali += "    .local " + vName + ", wenhao" + vName + ":I";
-							methodSmali += "    .local " + vName + ", wenhao" + vName + ":I";
-							classSmali += "\n    " + line + "\n";
-							methodSmali += "\n    " + line + "\n";
-							m.setSmaliCode(methodSmali);
+							if (!m.getvDebugInfo().containsKey(vName))
+							{
+								classSmali = classSmali.substring(0, classSmali.length()-1);
+								String methodSmali = m.getSmaliCode();
+								methodSmali = methodSmali.substring(0, methodSmali.length()-1);
+								classSmali = classSmali.substring(0, classSmali.lastIndexOf("\n")+1);
+								methodSmali = methodSmali.substring(0, methodSmali.lastIndexOf("\n")+1);
+								classSmali += "    .local " + vName + ", \"wenhao" + vName + "\":I";
+								methodSmali += "    .local " + vName + ", \"wenhao" + vName + "\":I";
+								classSmali += "\n    " + line + "\n";
+								methodSmali += "\n    " + line + "\n";
+								m.setSmaliCode(methodSmali);
+							}
 						}
 						m.addSourceLineNumber(s.getSourceLineNumber());
 						if (s instanceof IfStmt)
@@ -654,6 +657,13 @@ public class Parser {
 				debugName = debugName.replace("\"", "");
 				m.addvDebugInfo(localName, debugName);
 			}
+		}
+		else if (line.startsWith(".param ") && line.contains("\"")) {
+			// .param p1, a:I
+			String names = line.substring(line.indexOf(".param ") + ".param ".length());
+			String localName = names.substring(0, names.indexOf(", "));
+			String debugName = names.substring(names.indexOf(", ")+2, names.lastIndexOf("\""));
+			m.addvDebugInfo(localName, debugName);
 		}
 	}
 	
